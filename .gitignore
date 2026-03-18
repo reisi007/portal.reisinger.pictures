@@ -1,0 +1,27 @@
+# Global
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+repomix-*.md
+import_gemini.mjs
+
+# Frontend
+frontend/node_modules/
+frontend/dist/
+frontend/.env*
+!frontend/.env.example
+
+# Backend
+backend/vendor/
+backend/node_modules/
+backend/public/build/
+backend/storage/*.key
+backend/.env
+# Erlaube .env.local für das Team-Setup
+!backend/.env.local
+
+# Data
+db_data/
+search_data/
+photos/
