@@ -10,7 +10,8 @@
         "useDefaultPatterns": true,
         "customPatterns": [
             "frontend/node_modules/**",
-            "backend/vendor/**"
+            "backend/vendor/**",
+            "admin.lrplugin/**"
         ]
     }
 }

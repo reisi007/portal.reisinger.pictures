@@ -1,9 +1,9 @@
 <?php
 
-namespace App\Models;
+namespace AppModels;
 
-use Illuminate\Database\Eloquent\Model;
-use Laravel\Scout\Searchable;
+use IlluminateDatabaseEloquentModel;
+use LaravelScoutSearchable;
 
 class Photo extends Model
 {
@@ -17,11 +17,9 @@ class Photo extends Model
         'lr_uuid',
         'width',
         'height',
-        'deleted_at'
-    ];
-
-    protected $casts = [
-        'deleted_at' => 'datetime',
+        'title',
+        'description',
+        'artist'
     ];
 
     public function gallery()
@@ -29,12 +27,14 @@ class Photo extends Model
         return $this->belongsTo(Gallery::class);
     }
 
-    // Indexierung für Suchmaschine
     public function toSearchableArray()
     {
         return [
             'id' => $this->id,
             'filename' => $this->filename,
+            'title' => $this->title,
+            'description' => $this->description,
+            'artist' => $this->artist,
             'gallery_id' => $this->gallery_id,
         ];
     }

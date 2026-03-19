@@ -1,12 +1,12 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace AppHttpControllers;
 
-use Illuminate\Http\Request;
-use App\Models\Gallery;
-use App\Models\Photo;
-use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Str;
+use IlluminateHttpRequest;
+use AppModelsGallery;
+use AppModelsPhoto;
+use IlluminateSupportFacadesLog;
+use IlluminateSupportStr;
 
 class ImageController extends Controller
 {
@@ -19,20 +19,17 @@ class ImageController extends Controller
         ]);
 
         $gallery = Gallery::find($request->gallery_id);
-        if (!$gallery) {
-            return response()->json(['error' => 'Galerie nicht gefunden'], 404);
-        }
+        if (!$gallery) return response()->json(['error' => 'Galerie nicht gefunden'], 404);
 
+        $user = auth('api')->user();
         $file = $request->file('file');
         
-        // SECURITY: Path Traversal Prevention
-        // Extrahiere nur den reinen Dateinamen ohne Pfadbestandteile und sichere ihn
         $originalName = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
         $extension = $file->getClientOriginalExtension();
         $filename = Str::slug($originalName) . '.' . $extension;
         
         $baseStoragePath = env('PHOTO_STORAGE_PATH', base_path('../photos'));
-        $targetDir = $baseStoragePath . '/' . $gallery->slug;
+        $targetDir = $baseStoragePath . '/' . $gallery->id;
         $thumbsDir = $targetDir . '/_thumbs';
 
         if (!is_dir($targetDir)) mkdir($targetDir, 0755, true);
@@ -42,6 +39,20 @@ class ImageController extends Controller
 
         if (!move_uploaded_file($file->getPathname(), $targetPath)) {
             return response()->json(['error' => 'Datei konnte nicht gespeichert werden.'], 500);
+        }
+
+        // Metadaten AUSLESEN (statt schreiben)
+        $cmd = "exiftool -json -Title -ObjectName -XPTitle -ImageDescription -Caption-Abstract -Artist -By-line -Copyright " . escapeshellarg($targetPath);
+        $metaOutput = shell_exec($cmd);
+        $metaData = json_decode($metaOutput, true);
+        
+        $title = null; $desc = null; $artist = $user->metadata_copyright ?: $user->name;
+        if (is_array($metaData) && isset($metaData[0])) {
+            $m = $metaData[0];
+            $title = $m['Title'] ?? $m['ObjectName'] ?? $m['XPTitle'] ?? null;
+            $desc = $m['ImageDescription'] ?? $m['Caption-Abstract'] ?? null;
+            // Wenn das Bild schon einen Autor hat, behalten wir diesen, sonst Fallback auf den uploader
+            $artist = $m['Artist'] ?? $m['By-line'] ?? $m['Copyright'] ?? $artist;
         }
 
         $size = @getimagesize($targetPath);
@@ -65,7 +76,14 @@ class ImageController extends Controller
 
         $photo = Photo::updateOrCreate(
             ['gallery_id' => $gallery->id, 'lr_uuid' => $request->lr_uuid],
-            ['filename' => $filename, 'width' => $width, 'height' => $height]
+            [
+                'filename' => $filename, 
+                'width' => $width, 
+                'height' => $height, 
+                'title' => $title, 
+                'description' => $desc, 
+                'artist' => $artist
+            ]
         );
 
         return response()->json(['success' => true, 'photo_id' => $photo->id, 'filename' => $filename]);

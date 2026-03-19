@@ -1,16 +1,18 @@
 return {
     LrSdkVersion = 8.0,
-    LrToolkitIdentifier = 'pictures.reisinger.portal',
-    LrPluginName = 'reisinger.pictures - Portal',
-    VERSION = { major = 2, minor = 0, revision = 0, build = 0, display = "2.0.0" },
+    LrToolkitIdentifier = 'pictures.reisinger.pick',
+    LrPluginName = 'pick.reisinger.pictures - Admin Interface',
+    VERSION = { major = 1, minor = 1, revision = 0, build = 0, display = "1.1.0" },
+
     LrPluginInfoProvider = 'PluginInfoProvider.lua',
+
     LrExportMenuItems = {
         {
-            title = "1. Bilder zur Auswahl hochladen...",
+            title = "Bewertungs-Galerien verwalten...",
             file = "SelectionManager.lua",
         },
         {
-            title = "2. Fertige Bilder hochladen (Download)...",
+            title = "Delivery-Galerien verwalten...",
             file = "DeliveryManager.lua",
         }
     }

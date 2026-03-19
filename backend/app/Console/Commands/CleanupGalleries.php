@@ -28,7 +28,7 @@ class CleanupGalleries extends Command
 
         foreach ($expiredGalleries as $gallery) {
             $baseStoragePath = env('PHOTO_STORAGE_PATH', base_path('../photos'));
-            $targetDir = $baseStoragePath . '/' . $gallery->slug;
+            $targetDir = $baseStoragePath . '/' . $gallery->id;
 
             // Dateien physisch löschen
             if (is_dir($targetDir)) {

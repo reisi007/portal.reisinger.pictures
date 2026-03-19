@@ -11,10 +11,13 @@ Das Portal unterscheidet strikt zwischen zwei Nutzertypen:
 
 ## Lokales Setup (Quickstart)
 
-### 1. Backend & Datenbank (Laravel Herd & Docker)
-1. Services starten: `docker compose -f docker-compose.local.yml up -d`
+Wir nutzen ein hybrides lokales Setup: **Laravel Herd** für PHP/Nginx und **Docker** für Infrastruktur-Dienste.
+
+### 1. Backend, Datenbank & Suche
+1. Infrastruktur starten: `docker compose -f docker-compose.local.yml up -d` (Startet MariaDB & Meilisearch)
 2. Config kopieren: `cd backend && cp .env.local .env`
 3. SSL aktivieren: `herd secure portal.test`
+4. Datenbank migrieren: `php artisan migrate`
 
 ### 2. Frontend (React / Vite)
 1. Install: `pnpm install` (im `frontend/` Ordner)

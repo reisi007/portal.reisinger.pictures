@@ -4,9 +4,9 @@ Dieses Verzeichnis enthält die Laravel-basierte, zustandslose (stateless) JSON-
 
 Da wir eine maßgeschneiderte SaaS-Architektur verwenden, weicht dieses Setup in einigen zentralen Punkten vom Laravel-Standard ab. Hier sind die wichtigsten Architektur-Entscheidungen für Entwickler und KI-Agenten dokumentiert:
 
-## 1. Datenbank & Flyway (Single Source of Truth)
-* **Keine Laravel-Migrations für Geschäftsdaten:** Die Struktur der Geschäftsdatenbank wird **ausschließlich** über Flyway (`../flyway/migrations/`) gesteuert. Laravel-Migrations werden nur für interne Framework-Tabellen (z.B. Jobs, Cache) genutzt.
-* **Timestamps:** Da unser optimiertes Flyway-Schema in vielen Tabellen nur `created_at` und kein `updated_at` verwendet, ist in den betroffenen Eloquent-Models zwingend `public const UPDATED_AT = null;` gesetzt.
+## 1. Datenbank & Laravel Migrations (Single Source of Truth)
+* **Ausschließliche Nutzung von Laravel Migrations:** Die gesamte Struktur der Geschäftsdatenbank sowie interne Framework-Tabellen werden **ausschließlich** über native Laravel Migrations gesteuert. (Flyway wurde vollständig entfernt).
+* **Timestamps:** Da unser optimiertes Schema in vielen Tabellen nur `created_at` und kein `updated_at` verwendet, ist in den betroffenen Eloquent-Models zwingend `public const UPDATED_AT = null;` gesetzt.
 * **Surrogate Keys:** Alle Tabellen verwenden numerische Auto-Increment-IDs (`BIGINT`) als Primärschlüssel.
 
 ## 2. Authentifizierung & Autorisierung
@@ -19,11 +19,18 @@ Da wir eine maßgeschneiderte SaaS-Architektur verwenden, weicht dieses Setup in
 * **Thumbnails (Imagick):** Der `ImageController` nutzt direkt die PHP-Erweiterung `Imagick`, um beim Upload automatisch speichereffiziente WebP-Thumbnails (Standard-Breite: 1024px, 80% Qualität) zu generieren. 
 * **Identifikation via Lightroom:** Bilder werden anhand ihrer Lightroom UUID (`lr_uuid`) identifiziert. Dies ermöglicht saubere "Upserts" in die Datenbank, falls ein Bild aus Lightroom korrigiert und erneut hochgeladen wird.
 
-## 4. DSGVO & Immutable Audit Logs
+## 4. Suche (Meilisearch & Scout)
+* **Filterable Attributes:** Wir nutzen Meilisearch nativ, um das Rechte-System abzubilden (`whereIn('gallery_id', [...])`). 
+* **WICHTIG NACH UPDATES:** Wenn Änderungen an der Suche (Modelle oder Filter) vorgenommen werden, muss zwingend folgender Befehl ausgeführt werden, um die `scout.php` Konfiguration in die Meilisearch-Engine zu pushen:
+  ```bash
+  php artisan scout:sync-index-settings
+  ```
+
+## 5. DSGVO & Immutable Audit Logs
 * **Keine IP-Adressen:** Um der DSGVO vollständig zu entsprechen, werden in der `download_logs`-Tabelle **keine IP-Adressen** gespeichert.
 * **Immutable Logs (Denormalisierung):** Wenn eine Galerie oder ein User hart aus der Datenbank gelöscht wird (Hard Delete), werden die Fremdschlüssel in den Logs auf `NULL` gesetzt (`ON DELETE SET NULL`). Damit die Langzeit-Statistik trotzdem erhalten bleibt, speichert das Log beim Anlegen Denormalisierungs-Snapshots (`gallery_name_snapshot`, `user_name_snapshot`).
 
-## 5. Kern-Komponenten (Models)
+## 6. Kern-Komponenten (Models)
 * `User`: Implementiert das `JWTSubject` Interface für die Token-Generierung.
 * `Role`: Verwaltet statische Berechtigungen (z.B. `admin`).
 * `GalleryGroup`: Rekursives Model (`parent_id`) zur hierarchischen Gruppierung von Galerien (wird im Application-Cache als JSON-Baum vorgehalten).

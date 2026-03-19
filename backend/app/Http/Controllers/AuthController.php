@@ -1,12 +1,13 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace AppHttpControllers;
 
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Hash;
-use App\Models\User;
-use App\Models\Role;
+use IlluminateHttpRequest;
+use IlluminateSupportFacadesAuth;
+use IlluminateSupportFacadesHash;
+use AppModelsUser;
+use AppModelsRole;
+use AppModelsDomainMapping;
 
 class AuthController extends Controller
 {
@@ -38,6 +39,37 @@ class AuthController extends Controller
         }
 
         return response()->json(['error' => 'Ungültige Zugangsdaten.'], 401);
+    }
+
+    public function register(Request $request)
+    {
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => 'required|string|email|max:255|unique:users',
+            'password' => 'required|string|min:8',
+        ]);
+
+        $user = User::create([
+            'name' => $validated['name'],
+            'email' => $validated['email'],
+            'password' => Hash::make($validated['password']),
+        ]);
+
+        // Auto-Zuordnung via Domain
+        $domain = substr(strrchr($validated['email'], "@"), 1);
+        $mapping = DomainMapping::where('domain', $domain)->first();
+
+        if ($mapping) {
+            if ($mapping->role_id) {
+                $user->roles()->syncWithoutDetaching([$mapping->role_id]);
+            }
+            if ($mapping->gallery_group_id) {
+                $user->galleryGroups()->syncWithoutDetaching([$mapping->gallery_group_id]);
+            }
+        }
+
+        $token = Auth::guard('api')->login($user);
+        return $this->respondWithToken($token);
     }
 
     public function me()

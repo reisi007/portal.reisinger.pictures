@@ -1,10 +1,10 @@
 <?php
 
-namespace App\Models;
+namespace AppModels;
 
-use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Facades\Cache;
-use Laravel\Scout\Searchable;
+use IlluminateDatabaseEloquentModel;
+use IlluminateSupportFacadesCache;
+use LaravelScoutSearchable;
 
 class Gallery extends Model
 {
@@ -31,14 +31,26 @@ class Gallery extends Model
         'deleted_at' => 'datetime',
     ];
 
+    // Dieses Attribut wird bei JSON-Responses automatisch angehängt
+    protected $appends = ['full_path'];
+
+    public function getFullPathAttribute()
+    {
+        $path = $this->slug;
+        $group = $this->galleryGroup;
+        
+        while ($group) {
+            $path = $group->slug . '/' . $path;
+            $group = $group->parent; 
+        }
+        
+        return 'galleries/' . $path;
+    }
+
     protected static function booted()
     {
-        static::saved(function () {
-            Cache::forget('gallery_tree_admin');
-        });
-        static::deleted(function () {
-            Cache::forget('gallery_tree_admin');
-        });
+        static::saved(function () { Cache::forget('gallery_tree_admin'); });
+        static::deleted(function () { Cache::forget('gallery_tree_admin'); });
     }
 
     public function photos()

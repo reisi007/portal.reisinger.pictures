@@ -7,6 +7,7 @@ export interface User {
     email: string;
     is_admin: boolean;
     is_pending: boolean;
+    can_edit_metadata: boolean;
 }
 
 export function useAuth() {
@@ -20,11 +21,22 @@ export function useAuth() {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ email, password })
         });
+        if (!response.ok) throw new Error('Login fehlgeschlagen');
+        const data = await response.json();
+        localStorage.setItem('rp_jwt', data.access_token);
+        await mutate();
+    };
 
+    const register = async (name: string, email: string, password: string): Promise<void> => {
+        const response = await fetch('/api/auth/register', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name, email, password })
+        });
         if (!response.ok) {
-            throw new Error('Login fehlgeschlagen');
+            const data = await response.json();
+            throw new Error(data.message || 'Registrierung fehlgeschlagen');
         }
-
         const data = await response.json();
         localStorage.setItem('rp_jwt', data.access_token);
         await mutate();
@@ -35,11 +47,5 @@ export function useAuth() {
         mutate(undefined, false);
     };
 
-    return {
-        user,
-        isLoading: !error && user === undefined,
-        isError: error,
-        login,
-        logout
-    };
+    return { user, isLoading: !error && user === undefined, isError: error, login, register, logout };
 }

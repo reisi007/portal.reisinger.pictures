@@ -12,9 +12,11 @@ interface SidebarProps {
     onDeleteGallery: (id: number) => void;
     onGenerateInvite: (id: number) => void;
     onSendEmail: (id: number) => void;
+    onViewChange: (view: 'structure' | 'users' | 'settings' | 'stats' | 'mail-templates') => void;
+    currentView: 'structure' | 'users' | 'settings' | 'stats' | 'mail-templates';
 }
 
-export default function Sidebar({ userEmail, tree, isLoading, isError, onLogout, onOpenGalleryModal, onOpenGroupModal, onDeleteGallery, onGenerateInvite, onSendEmail }: SidebarProps) {
+export default function Sidebar({ userEmail, tree, isLoading, isError, onLogout, onOpenGalleryModal, onOpenGroupModal, onDeleteGallery, onGenerateInvite, onSendEmail, onViewChange, currentView }: SidebarProps) {
     const renderGroup = (group: GalleryGroup) => (
         <li key={"group-" + group.id}>
             <details open>
@@ -32,7 +34,7 @@ export default function Sidebar({ userEmail, tree, isLoading, isError, onLogout,
         return (
             <li key={"gal-" + gallery.id} className="group">
                 <div className="flex justify-between items-center w-full pr-2">
-                    <a href={`/g/${gallery.slug}`} target="_blank" rel="noreferrer" className={`flex-1 truncate ${isExpired ? 'line-through opacity-50' : ''}`}>
+                    <a href={'/' + gallery.full_path} target="_blank" rel="noreferrer" className={`flex-1 truncate ${isExpired ? 'line-through opacity-50' : ''}`}>
                         {gallery.type === 'selection' ? '✨ ' : '📦 '} 
                         {gallery.name}
                         {gallery.is_live && <span className="badge badge-error badge-xs ml-2 animate-pulse">LIVE</span>}
@@ -53,16 +55,37 @@ export default function Sidebar({ userEmail, tree, isLoading, isError, onLogout,
                 <h2 className="text-xl font-bold text-primary">Reisinger Portal</h2>
                 <p className="text-xs text-base-content/70 mt-1">{userEmail}</p>
             </div>
-            <div className="p-4 flex gap-2 border-b border-base-300">
-                <button onClick={onOpenGalleryModal} className="btn btn-primary btn-sm flex-1">+ Galerie</button>
-                <button onClick={onOpenGroupModal} className="btn btn-outline btn-sm flex-1">+ Gruppe</button>
-            </div>
+            
+            <ul className="menu bg-base-200 w-full p-2 border-b border-base-300">
+                <li><a className={currentView === 'structure' ? 'active' : ''} onClick={() => onViewChange('structure')}>
+                    <span className="iconify mdi--folder-multiple text-lg"></span> Galerie-Struktur
+                </a></li>
+                <li><a className={currentView === 'stats' ? 'active' : ''} onClick={() => onViewChange('stats')}>
+                    <span className="iconify mdi--chart-box text-lg"></span> Statistiken &amp; Logs
+                </a></li>
+                <li><a className={currentView === 'users' ? 'active' : ''} onClick={() => onViewChange('users')}>
+                    <span className="iconify mdi--account-group text-lg"></span> Benutzer &amp; Domains
+                </a></li>
+                <li><a className={currentView === 'mail-templates' ? 'active' : ''} onClick={() => onViewChange('mail-templates')}>
+                    <span className="iconify mdi--email-edit text-lg"></span> E-Mail Vorlagen
+                </a></li>
+                <li><a className={currentView === 'settings' ? 'active' : ''} onClick={() => onViewChange('settings')}>
+                    <span className="iconify mdi--cog text-lg"></span> Einstellungen
+                </a></li>
+            </ul>
+
+            {currentView === 'structure' && (
+                <div className="p-4 flex gap-2 border-b border-base-300">
+                    <button onClick={onOpenGalleryModal} className="btn btn-primary btn-sm flex-1">+ Galerie</button>
+                    <button onClick={onOpenGroupModal} className="btn btn-outline btn-sm flex-1">+ Gruppe</button>
+                </div>
+            )}
+
             <div className="flex-1 overflow-y-auto p-4">
                 {isLoading && <div className="text-center"><span className="loading loading-dots loading-md"></span></div>}
                 {isError && <div className="text-error text-sm">Fehler beim Laden.</div>}
-                {tree && (
+                {tree && currentView === 'structure' && (
                     <ul className="menu bg-base-200 w-full rounded-box p-0">
-                        <li className="menu-title">Struktur</li>
                         {tree.groups?.map(renderGroup)}
                         {tree.root_galleries?.map(renderGallery)}
                         {(!tree.groups?.length && !tree.root_galleries?.length) && <li className="disabled"><a>Keine Galerien gefunden</a></li>}
