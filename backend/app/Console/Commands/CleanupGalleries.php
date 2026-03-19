@@ -8,6 +8,8 @@ use Carbon\Carbon;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\File;
 
+use Illuminate\Support\Facades\Storage;
+
 class CleanupGalleries extends Command
 {
     protected $signature = 'app:cleanup-galleries';
@@ -25,10 +27,7 @@ class CleanupGalleries extends Command
         $count = 0;
 
         foreach ($expiredGalleries as $gallery) {
-            $baseStoragePath = env('PHOTO_STORAGE_PATH', base_path('../photos'));
-            $targetDir = $baseStoragePath . '/' . $gallery->id;
-
-            File::deleteDirectory($targetDir);
+            Storage::disk('photos')->deleteDirectory((string) $gallery->id);
 
             $galleryName = $gallery->name;
             $galleryExpire = $gallery->expires_at;

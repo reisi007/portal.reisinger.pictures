@@ -1,13 +1,13 @@
 <?php
 
-namespace AppHttpControllers;
+namespace App\Http\Controllers;
 
-use IlluminateHttpRequest;
-use AppModelsGallery;
-use AppModelsGalleryGroup;
-use AppModelsUser;
-use IlluminateSupportFacadesDB;
-use IlluminateSupportFacadesMail;
+use Illuminate\Http\Request;
+use App\Models\Gallery;
+use App\Models\GalleryGroup;
+use App\Models\User;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Mail;
 
 class MailController extends Controller
 {

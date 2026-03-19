@@ -1,10 +1,10 @@
 <?php
 
-namespace AppModels;
+namespace App\Models;
 
-use IlluminateDatabaseEloquentModel;
-use IlluminateSupportFacadesCache;
-use LaravelScoutSearchable;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Cache;
+use Laravel\Scout\Searchable;
 
 class Gallery extends Model
 {

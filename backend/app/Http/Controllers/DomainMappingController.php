@@ -1,9 +1,9 @@
 <?php
 
-namespace AppHttpControllers;
+namespace App\Http\Controllers;
 
-use AppModelsDomainMapping;
-use IlluminateHttpRequest;
+use App\Models\DomainMapping;
+use Illuminate\Http\Request;
 
 class DomainMappingController extends Controller
 {

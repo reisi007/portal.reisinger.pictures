@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { GalleryGroup } from '../../logic/useGalleries';
 
 interface GalleryModalsProps {
     availableGroups: {id: number, name: string, depth: number}[];
@@ -40,29 +39,29 @@ export default function GalleryModals({ availableGroups, isGroupModalOpen, setGr
 
     return (
         <>
-            {/* Modal: Neue Gruppe */}
+            {/* Modal: Neue Meta-Galerie */}
             <dialog className={`modal ${isGroupModalOpen ? 'modal-open' : ''}`}>
                 <div className="modal-box">
-                    <h3 className="font-bold text-lg mb-4">Neue Gruppe erstellen</h3>
+                    <h3 className="font-bold text-lg mb-4">Neue Meta-Galerie erstellen</h3>
                     <form onSubmit={handleGroupSubmit}>
                         <div className="form-control w-full mb-4">
-                            <label className="label"><span className="label-text">Name der Gruppe</span></label>
+                            <label className="label"><span className="label-text font-bold">Name der Meta-Galerie</span></label>
                             <input type="text" required value={newGroupName} onChange={e => setNewGroupName(e.target.value)} className="input input-bordered w-full" />
                         </div>
                         <div className="form-control w-full mb-6">
-                            <label className="label"><span className="label-text">Übergeordnete Gruppe</span></label>
+                            <label className="label"><span className="label-text font-bold">Übergeordnete Meta-Galerie</span></label>
                             <select value={groupParentId} onChange={e => setGroupParentId(e.target.value ? Number(e.target.value) : '')} className="select select-bordered w-full">
                                 <option value="">-- Keine --</option>
                                 {availableGroups.map(g => <option key={g.id} value={g.id}>{'- '.repeat(g.depth)}{g.name}</option>)}
                             </select>
                         </div>
                         <div className="modal-action">
-                            <button type="button" className="btn" onClick={() => setGroupModalOpen(false)}>Abbrechen</button>
+                            <button type="button" className="btn btn-ghost" onClick={() => setGroupModalOpen(false)}>Abbrechen</button>
                             <button type="submit" className="btn btn-primary">Erstellen</button>
                         </div>
                     </form>
                 </div>
-                <form method="dialog" className="modal-backdrop" onClick={() => setGroupModalOpen(false)}><button>close</button></form>
+                <div className="modal-backdrop" onClick={() => setGroupModalOpen(false)}></div>
             </dialog>
 
             {/* Modal: Neue Galerie */}
@@ -71,20 +70,20 @@ export default function GalleryModals({ availableGroups, isGroupModalOpen, setGr
                     <h3 className="font-bold text-lg mb-4">Neue Galerie erstellen</h3>
                     <form onSubmit={handleGallerySubmit}>
                         <div className="form-control w-full mb-4">
-                            <label className="label"><span className="label-text">Name der Galerie</span></label>
+                            <label className="label"><span className="label-text font-bold">Name der Galerie</span></label>
                             <input type="text" required value={newGalleryName} onChange={e => setNewGalleryName(e.target.value)} className="input input-bordered w-full" />
                         </div>
                         
-                        <div className="flex gap-4 mb-4">
-                            <div className="form-control w-1/2">
-                                <label className="label"><span className="label-text">Galerie-Typ</span></label>
+                        <div className="flex flex-col md:flex-row gap-4 mb-4">
+                            <div className="form-control w-full md:w-1/2">
+                                <label className="label"><span className="label-text font-bold">Galerie-Typ</span></label>
                                 <select value={newGalleryType} onChange={e => setNewGalleryType(e.target.value as 'selection'|'delivery')} className="select select-bordered w-full">
                                     <option value="selection">Auswahl (Ratings)</option>
                                     <option value="delivery">Delivery (Downloads)</option>
                                 </select>
                             </div>
-                            <div className="form-control w-1/2">
-                                <label className="label"><span className="label-text">Gruppe</span></label>
+                            <div className="form-control w-full md:w-1/2">
+                                <label className="label"><span className="label-text font-bold">Meta-Galerie</span></label>
                                 <select value={galleryParentId} onChange={e => setGalleryParentId(e.target.value ? Number(e.target.value) : '')} className="select select-bordered w-full">
                                     <option value="">-- Keine --</option>
                                     {availableGroups.map(g => <option key={g.id} value={g.id}>{'- '.repeat(g.depth)}{g.name}</option>)}
@@ -93,30 +92,30 @@ export default function GalleryModals({ availableGroups, isGroupModalOpen, setGr
                         </div>
 
                         <div className="form-control w-full mb-4">
-                            <label className="cursor-pointer label justify-start gap-4">
+                            <label className="cursor-pointer label justify-start gap-4 bg-base-200 p-3 rounded-box">
                                 <input type="checkbox" checked={newGalleryIsLive} onChange={e => setNewGalleryIsLive(e.target.checked)} className="checkbox checkbox-error" />
                                 <span className="label-text font-bold">LIVE Galerie (Automatischer Refresh alle 10s)</span>
                             </label>
                         </div>
 
-                        <div className="flex gap-4 mb-6">
-                            <div className="form-control w-1/2">
-                                <label className="label"><span className="label-text">Passwort (Optional)</span></label>
+                        <div className="flex flex-col md:flex-row gap-4 mb-6">
+                            <div className="form-control w-full md:w-1/2">
+                                <label className="label"><span className="label-text font-bold">Passwort (Optional)</span></label>
                                 <input type="text" value={newGalleryPassword} onChange={e => setNewGalleryPassword(e.target.value)} className="input input-bordered w-full" />
                             </div>
-                            <div className="form-control w-1/2">
-                                <label className="label"><span className="label-text">Ablaufdatum (Optional)</span></label>
+                            <div className="form-control w-full md:w-1/2">
+                                <label className="label"><span className="label-text font-bold">Ablaufdatum (Optional)</span></label>
                                 <input type="date" value={newGalleryExpiresAt} onChange={e => setNewGalleryExpiresAt(e.target.value)} className="input input-bordered w-full" />
                             </div>
                         </div>
 
                         <div className="modal-action">
-                            <button type="button" className="btn" onClick={() => setGalleryModalOpen(false)}>Abbrechen</button>
+                            <button type="button" className="btn btn-ghost" onClick={() => setGalleryModalOpen(false)}>Abbrechen</button>
                             <button type="submit" className="btn btn-primary">Erstellen</button>
                         </div>
                     </form>
                 </div>
-                <form method="dialog" className="modal-backdrop" onClick={() => setGalleryModalOpen(false)}><button>close</button></form>
+                <div className="modal-backdrop" onClick={() => setGalleryModalOpen(false)}></div>
             </dialog>
         </>
     );

@@ -1,10 +1,10 @@
 <?php
 
-namespace AppHttpControllers;
+namespace App\Http\Controllers;
 
-use AppModelsUser;
-use AppModelsRole;
-use IlluminateHttpRequest;
+use App\Models\User;
+use App\Models\Role;
+use Illuminate\Http\Request;
 
 class UserController extends Controller
 {

@@ -1,10 +1,10 @@
 <?php
 
-namespace AppHttpControllers;
+namespace App\Http\Controllers;
 
-use AppModelsGallery;
-use AppModelsPhoto;
-use IlluminateHttpRequest;
+use App\Models\Gallery;
+use App\Models\Photo;
+use Illuminate\Http\Request;
 use Carbon\Carbon;
 
 class SitemapController extends Controller

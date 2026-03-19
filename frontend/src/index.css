@@ -1,5 +1,13 @@
 @import "tailwindcss";
 
+@theme {
+    --color-brand-whatsapp: #25D366;
+    --color-brand-facebook: #3B5998;
+    --color-brand-instagram: #E1306C;
+    --color-brand-podcast: #8940FA;
+    --color-brand-messenger: #00C6FF;
+}
+
 @plugin "@tailwindcss/typography";
 
 @plugin "daisyui/theme" {
@@ -72,7 +80,19 @@
 }
 
 @layer base {
-    [class*="mdi--"], [class*="material-symbols--"] {
+    [class*="mdi--"],
+    [class*="material-symbols--"] {
         @apply iconify;
+    }
+
+    /* * UI-Fix: Dezentere Fokus-Rahmen für alle Formularfelder.
+     * Überschreibt das klobige Standard-Verhalten von DaisyUI (2px Breite + 2px Offset).
+     */
+    .input:focus, .input:focus-within,
+    .textarea:focus, .textarea:focus-within,
+    .select:focus, .select:focus-within,
+    .checkbox:focus, .radio:focus {
+        outline-width: 1px !important;
+        outline-offset: 0px !important;
     }
 }

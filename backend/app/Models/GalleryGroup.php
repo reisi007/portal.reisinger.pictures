@@ -1,9 +1,9 @@
 <?php
 
-namespace AppModels;
+namespace App\Models;
 
-use IlluminateDatabaseEloquentModel;
-use IlluminateSupportFacadesCache;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Cache;
 
 class GalleryGroup extends Model
 {

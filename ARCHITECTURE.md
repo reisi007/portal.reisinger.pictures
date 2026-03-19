@@ -2,7 +2,7 @@
 
 ## 1. High-Level Components
 * **Frontend (React SPA):** Built with Vite, React, TypeScript, TailwindCSS v4, and DaisyUI.
-* **Backend (Laravel):** Stateless JSON API (JWT Auth). Handles business logic, zip streaming, and ExifTool injection.
+* **Backend (Laravel):** Stateless JSON API (JWT Auth). Handles business logic, **on-the-fly zip streaming**, and **synchronous ExifTool injection/thumbnail generation** to keep the infrastructure footprint small (no background queue workers required).
 * **Database (MariaDB):** Managed via native **Laravel Migrations**.
 * **Search Engine (Meilisearch):** Typo-tolerant search via Laravel Scout.
 * **Lightroom Plugin (Lua):** Custom plugin with TWO distinct workflows (Selection vs. Delivery).

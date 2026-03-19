@@ -7,6 +7,8 @@ import Dashboard from './ui/Dashboard';
 import GalleryView from './ui/GalleryView';
 import InviteView from './ui/InviteView';
 import PhotoDetailView from './ui/PhotoDetailView';
+import SearchView from './ui/SearchView';
+import ErrorBoundary from './ui/components/ErrorBoundary';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
     const { user, isLoading, isError } = useAuth();
@@ -17,20 +19,22 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 
 export default function App() {
     return (
-        <Routes>
-            <Route path="/login" element={<Login />} />
-            <Route path="/register" element={<Register />} />
-            <Route path="/invite/:token" element={<InviteView />} />
-            
-            {/* Splat Route (*) fängt die Subordner-Struktur (z.B. /galleries/2024/hochzeit) ein */}
-            <Route path="/galleries/*" element={<GalleryView />} />
-            <Route path="/photos/:id" element={<PhotoDetailView />} />
+        <ErrorBoundary fallback={<div className="flex h-screen items-center justify-center p-8"><div className="alert alert-error">Kritischer Fehler. Bitte Seite neu laden.</div></div>}>
+            <Routes>
+                <Route path="/login" element={<Login />} />
+                <Route path="/register" element={<Register />} />
+                <Route path="/invite/:token" element={<InviteView />} />
+                
+                <Route path="/galleries/*" element={<ErrorBoundary><GalleryView /></ErrorBoundary>} />
+                <Route path="/photos/:id" element={<ErrorBoundary><PhotoDetailView /></ErrorBoundary>} />
+                
+                {/* Search ist nun öffentlich zugänglich! */}
+                <Route path="/search" element={<ErrorBoundary><SearchView /></ErrorBoundary>} />
 
-            <Route path="/" element={
-                <ProtectedRoute>
-                    <Dashboard />
-                </ProtectedRoute>
-            } />
-        </Routes>
+                <Route path="/" element={
+                    <ProtectedRoute><ErrorBoundary><Dashboard /></ErrorBoundary></ProtectedRoute>
+                } />
+            </Routes>
+        </ErrorBoundary>
     );
 }

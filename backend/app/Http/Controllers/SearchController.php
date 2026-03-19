@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use App\Models\Gallery;
 use App\Models\GalleryGroup;
 use App\Models\Photo;
+use Illuminate\Support\Facades\Log;
 
 class SearchController extends Controller
 {
@@ -18,27 +19,39 @@ class SearchController extends Controller
 
         $user = auth('api')->user();
         
-        $allowedGalleryIds = $user && $user->is_admin
-            ? Gallery::pluck('id')->toArray()
-            : ($user ? $user->galleries()->pluck('galleries.id')->toArray() : []);
+        $photoQuery = Photo::search($q);
+        $galleryQuery = Gallery::search($q);
 
-        $publicGalleryIds = Gallery::where('is_public', true)->pluck('id')->toArray();
-        $allowedGalleryIds = array_unique(array_merge($allowedGalleryIds, $publicGalleryIds));
+        if (!$user || !$user->is_admin) {
+            $allowedGalleryIds = $user ? $user->galleries()->pluck('galleries.id')->toArray() : [];
+            $publicGalleryIds = Gallery::where('is_public', true)->pluck('id')->toArray();
+            $allowedGalleryIds = array_unique(array_merge($allowedGalleryIds, $publicGalleryIds));
 
-        if (empty($allowedGalleryIds)) {
-            return response()->json(['galleries' => [], 'photos' => []]);
+            if (empty($allowedGalleryIds)) {
+                return response()->json(['galleries' => [], 'photos' => []]);
+            }
+            
+            $photoQuery->whereIn('gallery_id', $allowedGalleryIds);
+            $galleryQuery->whereIn('id', $allowedGalleryIds);
         }
 
-        $photos = Photo::search($q)->whereIn('gallery_id', $allowedGalleryIds)->take(100)->get();
+        try {
+            $photos = $photoQuery->take(100)->get();
 
-        $photos->transform(function($p) {
-            $p->load('gallery');
-            $baseUrl = '/media/' . $p->gallery->slug;
-            $p->thumb_url = $baseUrl . '/_thumbs/' . md5($p->filename . '1024') . '.webp';
-            return $p;
-        });
+            $photos->transform(function($p) {
+                $p->load('gallery');
+                $baseUrl = '/media/' . $p->gallery->slug;
+                $p->thumb_url = $baseUrl . '/_thumbs/' . md5($p->filename . '1024') . '.webp';
+                return $p;
+            });
 
-        $galleries = Gallery::search($q)->whereIn('id', $allowedGalleryIds)->take(50)->get();
+            $galleries = $galleryQuery->take(50)->get();
+        } catch (\Exception $e) {
+            // Graceful Degradation: Meilisearch Index might not exist yet if DB is empty
+            Log::warning("Search error (missing index?): " . $e->getMessage());
+            $photos = collect();
+            $galleries = collect();
+        }
 
         return response()->json([
             'galleries' => $galleries,

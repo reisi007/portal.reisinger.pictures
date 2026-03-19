@@ -8,22 +8,21 @@ use App\Models\Photo;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use App\Services\PhotoProcessingService;
+use Illuminate\Support\Facades\Storage;
 
 class FtpController extends Controller
 {
-    private function getInboxPath($userId)
-    {
-        $base = env('FTP_STORAGE_PATH', base_path('../ftp'));
-        return $base . '/' . $userId;
-    }
-
+    /**
+     * Gibt den Status der FTP-Inbox für den eingeloggten User zurück.
+     */
     public function status()
     {
         $user = auth('api')->user();
         $inboxPath = $this->getInboxPath($user->id);
-        
+
         $fileCount = 0;
         if (is_dir($inboxPath)) {
+            // Wir suchen nach Bildern direkt im User-Ordner
             $files = glob($inboxPath . '/*.{jpg,jpeg,JPG,JPEG}', GLOB_BRACE);
             $fileCount = count($files);
         }
@@ -37,71 +36,90 @@ class FtpController extends Controller
         ]);
     }
 
+    /**
+     * Setzt die Ziel-Galerie für den FTP-Import.
+     */
     public function setTarget(Request $request)
     {
         $request->validate(['gallery_id' => 'nullable|integer|exists:galleries,id']);
         $user = auth('api')->user();
-        
-        if ($request->gallery_id && !$user->is_admin && !$user->galleries()->where('galleries.id', $request->gallery_id)->exists()) {
-            return response()->json(['error' => 'Keine Rechte für diese Galerie.'], 403);
+
+        if ($request->gallery_id && !$user->is_admin && !$user->is_photographer) {
+            return response()->json(['error' => 'Keine Rechte für diese Aktion.'], 403);
         }
 
         $user->update(['current_ftp_gallery_id' => $request->gallery_id]);
         return response()->json(['success' => true]);
     }
 
+    /**
+     * Verschiebt Bilder aus der FTP-Inbox in die gewählte Galerie.
+     */
     public function process(Request $request)
     {
         $user = auth('api')->user();
-        if (!$user->current_ftp_gallery_id) return response()->json(['error' => 'Keine Ziel-Galerie ausgewählt.'], 400);
+        if (!$user->current_ftp_gallery_id) {
+            return response()->json(['error' => 'Keine Ziel-Galerie ausgewählt.'], 400);
+        }
 
         $gallery = Gallery::find($user->current_ftp_gallery_id);
         $inboxPath = $this->getInboxPath($user->id);
-        
-        if (!is_dir($inboxPath)) return response()->json(['success' => true, 'processed' => 0]);
 
-        $files = glob($inboxPath . '/*.{jpg,jpeg,JPG,JPEG}', GLOB_BRACE);
-        if (empty($files)) return response()->json(['success' => true, 'processed' => 0]);
+        if (!is_dir($inboxPath)) {
+            return response()->json(['success' => true, 'processed' => 0]);
+        }
 
-        $baseStoragePath = env('PHOTO_STORAGE_PATH', base_path('../photos'));
-        $targetDir = $baseStoragePath . '/' . $gallery->id;
-        $thumbsDir = $targetDir . '/_thumbs';
-
-        if (!is_dir($targetDir)) mkdir($targetDir, 0755, true);
-        if (!is_dir($thumbsDir)) mkdir($thumbsDir, 0755, true);
+        $imageFiles = glob($inboxPath . '/*.{jpg,jpeg,JPG,JPEG}', GLOB_BRACE);
+        if (empty($imageFiles)) {
+            return response()->json(['success' => true, 'processed' => 0]);
+        }
 
         $processedCount = 0;
         $defaultArtist = $user->metadata_copyright ?: $user->name;
         $photoService = app(PhotoProcessingService::class);
 
-        foreach ($files as $file) {
+        foreach ($imageFiles as $file) {
             $originalName = pathinfo($file, PATHINFO_FILENAME);
             $extension = pathinfo($file, PATHINFO_EXTENSION);
             $filename = Str::slug($originalName) . '.' . strtolower($extension);
-            $targetPath = $targetDir . '/' . $filename;
-            
-            // Bestehende Dateien überschreiben, um Metadaten zu aktualisieren
-            if (!rename($file, $targetPath)) continue;
 
-            $thumbPath = $thumbsDir . '/' . md5($filename . '1024') . '.webp';
-            
+            // Zielverzeichnis in der 'photos' disk (e.g. photos/1/mein-bild.jpg)
+            $targetDir = (string) $gallery->id;
+            $targetRelativePath = $targetDir . '/' . $filename;
+            $thumbsDir = $targetDir . '/_thumbs';
+
+            // Datei verschieben
+            Storage::disk('photos')->put($targetRelativePath, file_get_contents($file));
+            unlink($file);
+
+            // Thumbnail und Metadaten verarbeiten
+            $targetPath = Storage::disk('photos')->path($targetRelativePath);
+            $thumbPath = Storage::disk('photos')->path($thumbsDir . '/' . md5($filename . '1024') . '.webp');
+
+            // Falls das Thumbs-Verzeichnis fehlt
+            if (!is_dir(dirname($thumbPath))) {
+                mkdir(dirname($thumbPath), 0755, true);
+            }
+
             $meta = $photoService->processImage($targetPath, $thumbPath, $defaultArtist);
 
-            $photo = Photo::where('gallery_id', $gallery->id)->where('filename', $filename)->first();
-            
-            if ($photo) {
-                $photo->update($meta);
-            } else {
-                Photo::create(array_merge([
-                    'gallery_id' => $gallery->id,
-                    'lr_uuid' => 'ftp-' . uniqid(),
-                    'filename' => $filename,
-                ], $meta));
-            }
+            Photo::updateOrCreate(
+                ['gallery_id' => $gallery->id, 'filename' => $filename],
+                array_merge(['lr_uuid' => 'ftp-' . uniqid()], $meta)
+            );
 
             $processedCount++;
         }
 
         return response()->json(['success' => true, 'processed' => $processedCount]);
+    }
+
+    /**
+     * Hilfsmethode zur Bestimmung des lokalen Pfads der User-Inbox.
+     */
+    private function getInboxPath($userId)
+    {
+        // Nutzt den Pfad aus der Filesystem-Config
+        return Storage::disk('ftp_inbox')->path((string) $userId);
     }
 }

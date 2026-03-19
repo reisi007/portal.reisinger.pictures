@@ -1,10 +1,12 @@
 <?php
 
-namespace AppHttpControllers;
+namespace App\Http\Controllers;
 
-use IlluminateHttpRequest;
-use AppModelsPhoto;
-use IlluminateSupportFacadesLog;
+use Illuminate\Http\Request;
+use App\Models\Photo;
+use Illuminate\Support\Facades\Log;
+
+use Illuminate\Support\Facades\Storage;
 
 class PhotoController extends Controller
 {
@@ -54,13 +56,13 @@ class PhotoController extends Controller
             return response()->json(['error' => 'Keine Löschberechtigung.'], 403);
         }
 
-        $basePath = env('PHOTO_STORAGE_PATH', base_path('../photos')) . '/' . $photo->gallery->id;
-        
-        @unlink($basePath . '/' . $photo->filename);
-        @unlink($basePath . '/_watermarked/' . $photo->filename);
         $thumbName = md5($photo->filename . '1024') . '.webp';
-        @unlink($basePath . '/_thumbs/' . $thumbName);
-        @unlink($basePath . '/_thumbs/_watermarked/' . $thumbName);
+        Storage::disk('photos')->delete([
+            $photo->gallery->id . '/' . $photo->filename,
+            $photo->gallery->id . '/_watermarked/' . $photo->filename,
+            $photo->gallery->id . '/_thumbs/' . $thumbName,
+            $photo->gallery->id . '/_thumbs/_watermarked/' . $thumbName
+        ]);
 
         $photo->delete();
 
