@@ -9,6 +9,7 @@ export interface User {
     is_photographer: boolean;
     is_pending: boolean;
     can_edit_metadata: boolean;
+    roles: string[];
 }
 
 export function useAuth() {

@@ -43,3 +43,7 @@ Please read the [ARCHITECTURE.md](ARCHITECTURE.md) file first.
 **8. Database & Migrations Rule (CRITICAL)**
 * During development, there must be exactly ONE migration file (`V001__initial_portal_schema.php`).
 * Do not create new migration files for schema changes. Instead, append or modify the existing `V001` file to keep the local setup clean and straightforward.
+
+**9. Graceful Degradation & Error Boundaries (CRITICAL)**
+* **Isolate Failures:** The application must not crash entirely due to a localized bug or malformed API response (e.g. PHP serialization errors).
+* **Implementation:** Always use React Error Boundaries (`ErrorBoundary`) to wrap distinct UI sections (like sidebars, main content areas, or individual widgets). Ensure that a crash in one component displays a localized error message while leaving the rest of the application functional.

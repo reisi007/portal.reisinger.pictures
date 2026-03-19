@@ -1,9 +1,9 @@
 <?php
 
-namespace AppHttpControllers;
+namespace App\Http\Controllers;
 
-use AppModelsEmailTemplate;
-use IlluminateHttpRequest;
+use App\Models\EmailTemplate;
+use Illuminate\Http\Request;
 
 class EmailTemplateController extends Controller
 {

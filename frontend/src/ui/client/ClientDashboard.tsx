@@ -1,78 +1,101 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../logic/useAuth';
 import { useSearch } from '../../logic/useSearch';
+import Sidebar from '../components/Sidebar';
 
 export default function ClientDashboard() {
-    const { user, logout } = useAuth();
+    const { user } = useAuth();
     const navigate = useNavigate();
-    
-    // Search State
+    const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
     const { results: searchResults } = useSearch(searchQuery);
 
     if (!user) return null;
 
-    return (
-        <div className="min-h-screen bg-base-200">
-            <div className="navbar bg-base-100 shadow-md px-4 md:px-8 flex flex-col md:flex-row gap-4 py-4 md:py-0 h-auto md:h-16 z-50">
-                <div className="flex-1 w-full md:w-auto flex justify-between items-center">
-                    <a className="text-xl font-bold text-primary">Meine Galerien</a>
-                    <div className="md:hidden">
-                        <button onClick={logout} className="btn btn-outline btn-sm btn-error">Abmelden</button>
-                    </div>
-                </div>
+    const handleSearchSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        if (searchQuery.trim().length >= 2) {
+            navigate(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
+            setSearchQuery('');
+        }
+    };
 
-                {/* Globale Suche für Kunden */}
-                <div className="flex-none w-full md:w-auto flex-1 max-w-xl relative">
-                    <input 
-                        type="text" 
-                        placeholder="Bilder durchsuchen..." 
-                        className="input input-sm input-bordered w-full" 
-                        value={searchQuery} 
-                        onChange={(e) => setSearchQuery(e.target.value)} 
-                    />
-                    {searchQuery.length >= 2 && searchResults && (
-                        <div className="absolute top-10 left-0 w-full bg-base-100 shadow-2xl rounded-box border border-base-300 z-50">
-                            <ul className="menu p-2">
-                                {searchResults.galleries.map(g => (
-                                    <li key={g.id}><a onClick={() => navigate('/' + g.full_path)}>📁 {g.name}</a></li>
-                                ))}
-                                {searchResults.photos.map(p => (
-                                    <li key={p.id}><a onClick={() => navigate('/photos/' + p.id)}>{p.filename}</a></li>
-                                ))}
-                                {searchResults.galleries.length === 0 && searchResults.photos.length === 0 && (
-                                    <li className="disabled"><a>Keine Treffer gefunden</a></li>
-                                )}
-                            </ul>
+    return (
+        <div className="flex h-screen bg-base-100 overflow-hidden relative">
+            {isSidebarOpen && (
+                <div className="fixed inset-0 bg-black/50 z-40 md:hidden transition-opacity" onClick={() => setIsSidebarOpen(false)}></div>
+            )}
+
+            <div className={`fixed inset-y-0 left-0 z-50 w-80 transform transition-transform duration-300 ease-in-out md:relative md:translate-x-0 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+                <Sidebar onCloseMobile={() => setIsSidebarOpen(false)} />
+            </div>
+
+            <main className="flex-1 overflow-y-auto flex flex-col w-full relative bg-base-200">
+                <header className="p-4 border-b border-base-300 bg-base-100 flex items-center gap-4 sticky top-0 z-30">
+                    <button className="btn btn-square btn-ghost md:hidden" onClick={() => setIsSidebarOpen(true)}>
+                        <span className="iconify mdi--menu text-2xl"></span>
+                    </button>
+                    
+                    <form onSubmit={handleSearchSubmit} className="relative flex-1 w-full max-w-full md:max-w-4xl">
+                        <div className="join w-full shadow-sm">
+                            <input 
+                                type="text" 
+                                placeholder="Bilder durchsuchen..." 
+                                className="input input-bordered join-item w-full" 
+                                value={searchQuery} 
+                                onChange={(e) => setSearchQuery(e.target.value)} 
+                            />
+                            <button type="submit" className="btn btn-primary join-item">
+                                <span className="iconify mdi--magnify text-xl"></span>
+                            </button>
+                        </div>
+                        
+                        {searchQuery.length >= 2 && searchResults && (
+                            <div className="absolute top-14 left-0 w-full bg-base-100 shadow-2xl rounded-box border border-base-300 z-50 max-h-[60vh] overflow-y-auto">
+                                <ul className="menu p-2">
+                                    <li>
+                                        <Link to={`/search?q=${encodeURIComponent(searchQuery.trim())}`} onClick={() => setSearchQuery('')} className="text-primary font-bold">
+                                            <span className="iconify mdi--magnify text-lg mr-1"></span> Suche nach "{searchQuery}"
+                                        </Link>
+                                    </li>
+                                    <div className="divider my-0"></div>
+                                    {searchResults.galleries.map(g => (
+                                        <li key={g.id}><Link to={'/' + g.full_path} onClick={() => setSearchQuery('')}>📁 {g.name}</Link></li>
+                                    ))}
+                                    {searchResults.photos.map(p => (
+                                        <li key={p.id}><Link to={'/photos/' + p.id} onClick={() => setSearchQuery('')}>
+                                            <span className="iconify mdi--image-outline opacity-70"></span> {p.filename}
+                                        </Link></li>
+                                    ))}
+                                    {searchResults.galleries.length === 0 && searchResults.photos.length === 0 && (
+                                        <li className="disabled"><span className="opacity-50">Keine direkten Treffer</span></li>
+                                    )}
+                                </ul>
+                            </div>
+                        )}
+                    </form>
+                </header>
+                
+                <div className="container mx-auto p-8 relative z-0">
+                    <h1 className="text-3xl font-bold mb-8">Willkommen zurück, {user.name}!</h1>
+                    {(user as any).my_galleries?.length > 0 ? (
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            {(user as any).my_galleries.map((g: any) => (
+                                <div key={g.id} className="card bg-base-100 shadow-xl cursor-pointer hover:shadow-2xl transition-shadow border border-base-300" onClick={() => navigate('/' + g.full_path)}>
+                                    <div className="card-body">
+                                        <h2 className="card-title text-primary">{g.type === 'selection' ? '✨ ' : '📦 '} {g.name}</h2>
+                                        <div className="card-actions justify-end mt-4"><button className="btn btn-primary btn-sm">Öffnen</button></div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    ) : (
+                        <div className="alert shadow-lg bg-base-100 border border-base-300">
+                            <span>Aktuell sind keine Galerien für dich freigeschaltet.</span>
                         </div>
                     )}
                 </div>
-
-                <div className="flex-none hidden md:flex items-center ml-4">
-                    <span className="mr-4 text-sm opacity-70">{user.email}</span>
-                    <button onClick={logout} className="btn btn-outline btn-sm btn-error">Abmelden</button>
-                </div>
-            </div>
-            
-            <main className="container mx-auto p-8 relative z-0">
-                <h1 className="text-3xl font-bold mb-8">Willkommen zurück, {user.name}!</h1>
-                {(user as any).my_galleries?.length > 0 ? (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {(user as any).my_galleries.map((g: any) => (
-                            <div key={g.id} className="card bg-base-100 shadow-xl cursor-pointer" onClick={() => navigate('/' + g.full_path)}>
-                                <div className="card-body">
-                                    <h2 className="card-title text-primary">{g.type === 'selection' ? '✨ ' : '📦 '} {g.name}</h2>
-                                    <div className="card-actions justify-end mt-4"><button className="btn btn-primary btn-sm">Öffnen</button></div>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                ) : (
-                    <div className="alert shadow-lg bg-base-100">
-                        <span>Aktuell sind keine Galerien für dich freigeschaltet.</span>
-                    </div>
-                )}
             </main>
         </div>
     );

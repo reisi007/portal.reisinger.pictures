@@ -1,11 +1,11 @@
 <?php
 
-namespace AppServices;
+namespace App\Services;
 
 use Imagick;
 use ImagickPixel;
-use IlluminateSupportFacadesLog;
-use AppModelsSetting;
+use Illuminate\Support\Facades\Log;
+use App\Models\Setting;
 
 class WatermarkService
 {

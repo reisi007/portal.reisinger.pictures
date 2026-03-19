@@ -8,6 +8,8 @@ use App\Models\Photo;
 use Illuminate\Support\Str;
 use App\Services\PhotoProcessingService;
 
+use Illuminate\Support\Facades\Storage;
+
 class ImageController extends Controller
 {
     public function upload(Request $request)
@@ -33,20 +35,18 @@ class ImageController extends Controller
         $extension = $file->getClientOriginalExtension();
         $filename = Str::slug($originalName) . '.' . $extension;
         
-        $baseStoragePath = env('PHOTO_STORAGE_PATH', base_path('../photos'));
-        $targetDir = $baseStoragePath . '/' . $gallery->id;
+        $targetDir = (string) $gallery->id;
         $thumbsDir = $targetDir . '/_thumbs';
 
-        if (!is_dir($targetDir)) mkdir($targetDir, 0755, true);
-        if (!is_dir($thumbsDir)) mkdir($thumbsDir, 0755, true);
+        Storage::disk('photos')->makeDirectory($targetDir);
+        Storage::disk('photos')->makeDirectory($thumbsDir);
 
-        $targetPath = $targetDir . '/' . $filename;
-
-        if (!move_uploaded_file($file->getPathname(), $targetPath)) {
+        if (!$file->storeAs($targetDir, $filename, ['disk' => 'photos'])) {
             return response()->json(['error' => 'Datei konnte nicht gespeichert werden.'], 500);
         }
 
-        $thumbPath = $thumbsDir . '/' . md5($filename . '1024') . '.webp';
+        $targetPath = Storage::disk('photos')->path($targetDir . '/' . $filename);
+        $thumbPath = Storage::disk('photos')->path($thumbsDir . '/' . md5($filename . '1024') . '.webp');
         
         $photoService = app(PhotoProcessingService::class);
         $meta = $photoService->processImage($targetPath, $thumbPath, $user->metadata_copyright ?: $user->name);

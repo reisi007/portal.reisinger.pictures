@@ -1,13 +1,13 @@
 <?php
 
-namespace AppHttpControllers;
+namespace App\Http\Controllers;
 
-use IlluminateHttpRequest;
-use IlluminateSupportFacadesAuth;
-use IlluminateSupportFacadesHash;
-use AppModelsUser;
-use AppModelsRole;
-use AppModelsDomainMapping;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
+use App\Models\User;
+use App\Models\Role;
+use App\Models\DomainMapping;
 
 class AuthController extends Controller
 {
@@ -82,6 +82,7 @@ class AuthController extends Controller
         if (!$user->is_admin) {
             $user->load('galleries');
         }
+        $user->load('roles');
 
         return response()->json([
             'id' => $user->id,
@@ -90,6 +91,7 @@ class AuthController extends Controller
             'is_admin' => $user->is_admin,
             'is_photographer' => $user->is_photographer,
             'is_pending' => $user->is_pending,
+            'roles' => $user->roles->pluck('name'),
             'my_galleries' => $user->galleries ?? []
         ]);
     }

@@ -1,15 +1,15 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace AppHttpControllers;
 
-use Illuminate\Http\Request;
-use App\Models\Gallery;
-use App\Models\Photo;
-use App\Models\DownloadLog;
-use ZipStream\ZipStream;
-use Illuminate\Support\Facades\Log;
-use App\Services\WatermarkService;
-use Symfony\Component\Process\Process;
+use IlluminateHttpRequest;
+use AppModelsGallery;
+use AppModelsPhoto;
+use AppModelsDownloadLog;
+use ZipStreamZipStream;
+use IlluminateSupportFacadesLog;
+use AppServicesWatermarkService;
+use SymfonyComponentProcessProcess;
 
 class DownloadController extends Controller
 {
@@ -17,7 +17,8 @@ class DownloadController extends Controller
     {
         $user = auth('api')->user();
         if (!$gallery->is_public) {
-            if (!$user) abort(401, 'Unauthorized access to this gallery.');
+            if (!$user)
+                abort(401, 'Unauthorized access to this gallery.');
             if (!$user->canAccessGallery($gallery->id)) {
                 abort(403, 'Unauthorized access to this gallery.');
             }
@@ -28,20 +29,31 @@ class DownloadController extends Controller
     private function injectMetadata($sourcePath, $photo, $userName)
     {
         $tempDir = storage_path('app/private/temp');
-        if (!is_dir($tempDir)) mkdir($tempDir, 0755, true);
+        if (!is_dir($tempDir))
+            mkdir($tempDir, 0755, true);
 
         $tempPath = $tempDir . '/' . uniqid('dl_') . '.jpg';
         copy($sourcePath, $tempPath);
 
-        $artist = trim($photo->artist ?? config('app.name', 'Reisinger Portal'), '"\''');
+        // FIX: Korrekter String für den Trim-Befehl ohne Syntax-Fehler
+        $artist = trim($photo->artist ?? config('app.name', 'Reisinger Portal'), "\"\'");
         $copyright = 'Copyright ' . date('Y') . ' ' . $artist;
         $instructions = 'Licensed to / Downloaded by: ' . $userName;
-        
+
         $args = [
-            'exiftool', '-overwrite_original', '-q', '-m', 
-            '-charset', 'utf8', '-charset', 'iptc=utf8', '-charset', 'exif=utf8', '-IPTC:CodedCharacterSet=utf8'
+            'exiftool',
+            '-overwrite_original',
+            '-q',
+            '-m',
+            '-charset',
+            'utf8',
+            '-charset',
+            'iptc=utf8',
+            '-charset',
+            'exif=utf8',
+            '-IPTC:CodedCharacterSet=utf8'
         ];
-        
+
         if (!empty($photo->title)) {
             $args[] = "-ObjectName={$photo->title}";
             $args[] = "-XPTitle={$photo->title}";
@@ -50,7 +62,7 @@ class DownloadController extends Controller
             $args[] = "-Caption-Abstract={$photo->description}";
             $args[] = "-ImageDescription={$photo->description}";
         }
-        
+
         array_push(
             $args,
             "-Artist={$artist}",
@@ -60,14 +72,14 @@ class DownloadController extends Controller
             "-SpecialInstructions={$instructions}",
             $tempPath
         );
-             
+
         $process = new Process($args);
         $process->run();
 
         if (!$process->isSuccessful()) {
             Log::error("ExifTool failed on {$sourcePath}: " . $process->getErrorOutput());
             @unlink($tempPath);
-            return $sourcePath; 
+            return $sourcePath;
         }
 
         return $tempPath;
@@ -78,11 +90,12 @@ class DownloadController extends Controller
         $photo = Photo::with('gallery')->findOrFail($photoId);
         $gallery = $photo->gallery;
         $user = $this->authorizeGalleryAccess($gallery);
-        
+
         $baseStoragePath = env('PHOTO_STORAGE_PATH', base_path('../photos'));
         $sourcePath = $baseStoragePath . '/' . $gallery->id . '/' . $photo->filename;
 
-        if (!file_exists($sourcePath)) abort(404, 'Datei nicht gefunden');
+        if (!file_exists($sourcePath))
+            abort(404, 'Datei nicht gefunden');
 
         $userName = $user ? $user->name : 'Gast';
 
@@ -99,10 +112,11 @@ class DownloadController extends Controller
         if (!$user) {
             $wmPath = $baseStoragePath . '/' . $gallery->id . '/_watermarked/' . $photo->filename;
             if (!file_exists($wmPath)) {
-                if (!is_dir(dirname($wmPath))) mkdir(dirname($wmPath), 0755, true);
+                if (!is_dir(dirname($wmPath)))
+                    mkdir(dirname($wmPath), 0755, true);
                 app(WatermarkService::class)->applyWatermark($sourcePath, $wmPath, 2000);
             }
-            $sourcePath = $wmPath; 
+            $sourcePath = $wmPath;
         }
 
         $processedPath = $this->injectMetadata($sourcePath, $photo, $userName);
@@ -130,15 +144,17 @@ class DownloadController extends Controller
         return response()->streamDownload(function () use ($gallery, $baseStoragePath, $userName, $user) {
             $zip = new ZipStream(sendHttpHeaders: false);
             $watermarkService = app(WatermarkService::class);
-            
+
             foreach ($gallery->photos as $photo) {
                 $sourcePath = $baseStoragePath . '/' . $gallery->id . '/' . $photo->filename;
-                if (!file_exists($sourcePath)) continue;
+                if (!file_exists($sourcePath))
+                    continue;
 
                 if (!$user) {
                     $wmPath = $baseStoragePath . '/' . $gallery->id . '/_watermarked/' . $photo->filename;
                     if (!file_exists($wmPath)) {
-                        if (!is_dir(dirname($wmPath))) mkdir(dirname($wmPath), 0755, true);
+                        if (!is_dir(dirname($wmPath)))
+                            mkdir(dirname($wmPath), 0755, true);
                         $watermarkService->applyWatermark($sourcePath, $wmPath, 2000);
                     }
                     $sourcePath = $wmPath;
@@ -146,12 +162,12 @@ class DownloadController extends Controller
 
                 $processedPath = $this->injectMetadata($sourcePath, $photo, $userName);
                 $zip->addFileFromPath($photo->filename, $processedPath);
-                
+
                 if ($processedPath !== $sourcePath) {
                     @unlink($processedPath);
                 }
             }
-            
+
             $zip->finish();
         }, $gallery->slug . '.zip');
     }

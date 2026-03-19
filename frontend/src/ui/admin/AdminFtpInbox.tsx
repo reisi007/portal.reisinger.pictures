@@ -10,10 +10,14 @@ export default function AdminFtpInbox() {
 
     if (isLoading || !status) return <div className="p-4"><span className="loading loading-spinner"></span></div>;
 
-    const flatGalleries = tree ? [
-        ...(tree.groups.flatMap(g => g.galleries || [])), 
-        ...(tree.root_galleries || [])
-    ] : [];
+    // Robuste Fallbacks
+    const safeGroups = Array.isArray(tree?.groups) ? tree.groups : [];
+    const safeRootGalleries = Array.isArray(tree?.root_galleries) ? tree.root_galleries : [];
+
+    const flatGalleries = [
+        ...(safeGroups.flatMap(g => Array.isArray(g.galleries) ? g.galleries : [])),
+        ...safeRootGalleries
+    ];
 
     const handleSetTarget = async () => {
         await setTargetGallery(selectedId === '' ? null : Number(selectedId));
@@ -33,7 +37,7 @@ export default function AdminFtpInbox() {
                 <h2 className="card-title text-2xl flex items-center gap-2">
                     <span className="iconify mdi--folder-download text-primary"></span> FTP Inbox
                 </h2>
-                
+
                 <div className="flex gap-4 items-center bg-base-100 p-4 rounded-box mt-2">
                     <div className="flex-1">
                         <p className="text-sm opacity-70">Dein Upload-Ordner</p>
@@ -67,10 +71,10 @@ export default function AdminFtpInbox() {
                             </div>
                         )}
                     </div>
-                    
-                    <button 
-                        onClick={handleProcess} 
-                        disabled={status.file_count === 0 || !status.current_target_gallery || processing} 
+
+                    <button
+                        onClick={handleProcess}
+                        disabled={status.file_count === 0 || !status.current_target_gallery || processing}
                         className="btn btn-primary"
                     >
                         {processing ? <span className="loading loading-spinner"></span> : 'Bilder Importieren'}

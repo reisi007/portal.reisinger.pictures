@@ -30,6 +30,18 @@ return [
 
     'disks' => [
 
+        'photos' => [
+            'driver' => 'local',
+            'root' => env('PHOTO_STORAGE_PATH', base_path('../photos')),
+            'throw' => false,
+        ],
+
+        'ftp_inbox' => [
+            'driver' => 'local',
+            'root' => env('FTP_STORAGE_PATH', base_path('../ftp')),
+            'throw' => false,
+        ],
+
         'local' => [
             'driver' => 'local',
             'root' => storage_path('app/private'),

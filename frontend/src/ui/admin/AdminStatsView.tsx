@@ -16,8 +16,8 @@ export default function AdminStatsView() {
     if (isLoading && !stats) return <div className="p-10 flex justify-center"><span className="loading loading-spinner loading-lg"></span></div>;
 
     return (
-        <div className="p-10 max-w-6xl mx-auto w-full">
-            <h1 className="text-4xl font-bold mb-6">Statistiken & Audit-Logs</h1>
+        <div className="p-4 md:p-10 max-w-6xl mx-auto w-full">
+            <h1 className="text-3xl md:text-4xl font-bold mb-6">Statistiken & Audit-Logs</h1>
 
             {/* Kacheln (Statistiken) */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
@@ -27,7 +27,8 @@ export default function AdminStatsView() {
                 </div>
                 <div className="stat bg-base-200 rounded-box border border-base-300 shadow-sm">
                     <div className="stat-title text-base-content/70">Downloads Gesamt</div>
-                    <div className="stat-value text-secondary">{stats?.total_downloads || 0}</div>
+                    {/* HIER WURDE text-secondary ZU text-info GEÄNDERT */}
+                    <div className="stat-value text-secondary-content">{stats?.total_downloads || 0}</div>
                 </div>
                 <div className="stat bg-base-200 rounded-box border border-base-300 shadow-sm">
                     <div className="stat-title text-base-content/70">Anonyme Gäste</div>
@@ -36,11 +37,11 @@ export default function AdminStatsView() {
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-                
+
                 {/* Linke Seite: Domain Auswertung */}
                 <div className="lg:col-span-1">
                     <div className="card bg-base-200 border border-base-300 shadow-sm">
-                        <div className="card-body p-6">
+                        <div className="card-body p-4 md:p-6">
                             <h2 className="card-title text-lg mb-4 flex items-center gap-2">
                                 <span className="iconify mdi--domain text-primary"></span> Top Domains
                             </h2>
@@ -61,7 +62,7 @@ export default function AdminStatsView() {
                                                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                                                 ))}
                                             </Pie>
-                                            <Tooltip 
+                                            <Tooltip
                                                 contentStyle={{ backgroundColor: 'oklch(var(--b1))', borderColor: 'oklch(var(--b3))', borderRadius: '0.5rem' }}
                                                 itemStyle={{ color: 'oklch(var(--bc))' }}
                                             />
@@ -69,7 +70,7 @@ export default function AdminStatsView() {
                                         </PieChart>
                                     </ResponsiveContainer>
                                 ) : (
-                                    <div className="flex h-full items-center justify-center opacity-50 text-sm">
+                                    <div className="flex h-full items-center justify-center opacity-50 text-sm text-center">
                                         Noch keine Download-Daten vorhanden.
                                     </div>
                                 )}
@@ -103,13 +104,13 @@ export default function AdminStatsView() {
                                                     {new Date(log.created_at).toLocaleString('de-DE')}
                                                 </td>
                                                 <td className="font-bold">{log.user_name_snapshot || 'Anonymer Gast'}</td>
-                                                <td>{log.gallery_name_snapshot || '-'}</td>
+                                                <td className="max-w-[150px] truncate" title={log.gallery_name_snapshot || '-'}>{log.gallery_name_snapshot || '-'}</td>
                                                 <td>
                                                     <div className="flex items-center gap-2">
-                                                        {log.item_type === 'full_zip' 
+                                                        {log.item_type === 'full_zip'
                                                             ? <span className="badge badge-secondary badge-xs">ZIP</span>
                                                             : <span className="badge badge-accent badge-xs">JPG</span>}
-                                                        <span className="truncate max-w-[150px] text-xs" title={log.item_identifier}>
+                                                        <span className="truncate max-w-[150px] md:max-w-[200px] text-xs" title={log.item_identifier}>
                                                             {log.item_identifier}
                                                         </span>
                                                     </div>
@@ -122,9 +123,9 @@ export default function AdminStatsView() {
                                     </tbody>
                                 </table>
                             </div>
-                            
+
                             {logs && logs.last_page > 1 && (
-                                <div className="flex justify-between items-center p-4 border-t border-base-300 bg-base-100">
+                                <div className="flex justify-between items-center p-4 border-t border-base-300 bg-base-100 flex-wrap gap-2">
                                     <button className="btn btn-sm btn-outline" disabled={page === 1} onClick={() => setPage(p => p - 1)}>&larr; Zurück</button>
                                     <span className="text-sm font-semibold">Seite {page} von {logs.last_page}</span>
                                     <button className="btn btn-sm btn-outline" disabled={page === logs.last_page} onClick={() => setPage(p => p + 1)}>Weiter &rarr;</button>
