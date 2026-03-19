@@ -1,9 +1,17 @@
 import React, { useState } from 'react';
 import { useStats } from '../../logic/useStats';
+import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
 export default function AdminStatsView() {
     const [page, setPage] = useState(1);
     const { stats, logs, isLoading } = useStats(page);
+
+    const chartData = stats ? [
+        ...stats.domain_stats.map(d => ({ name: '@' + d.domain, value: d.count })),
+        ...(stats.guest_downloads > 0 ? [{ name: 'Anonyme Gäste', value: stats.guest_downloads }] : [])
+    ].sort((a, b) => b.value - a.value) : [];
+
+    const COLORS = ['#2A9D8F', '#E9C46A', '#F4A261', '#E76F51', '#264653', '#8AB17D', '#B5838D'];
 
     if (isLoading && !stats) return <div className="p-10 flex justify-center"><span className="loading loading-spinner loading-lg"></span></div>;
 
@@ -36,19 +44,36 @@ export default function AdminStatsView() {
                             <h2 className="card-title text-lg mb-4 flex items-center gap-2">
                                 <span className="iconify mdi--domain text-primary"></span> Top Domains
                             </h2>
-                            <ul className="menu bg-base-100 p-0 rounded-box border border-base-300">
-                                {stats?.domain_stats.map((d, i) => (
-                                    <li key={i} className="border-b border-base-300 last:border-0">
-                                        <a className="flex justify-between cursor-default hover:bg-base-100">
-                                            <span className="font-semibold text-sm">@{d.domain}</span>
-                                            <span className="badge badge-sm badge-primary">{d.count}</span>
-                                        </a>
-                                    </li>
-                                ))}
-                                {(!stats?.domain_stats || stats.domain_stats.length === 0) && (
-                                    <li className="disabled p-4 text-center text-sm opacity-50">Noch keine registrierten Firmen-Downloads.</li>
+                            <div className="bg-base-100 rounded-box border border-base-300 p-4" style={{ height: '300px' }}>
+                                {chartData.length > 0 ? (
+                                    <ResponsiveContainer width="100%" height="100%">
+                                        <PieChart>
+                                            <Pie
+                                                data={chartData}
+                                                cx="50%"
+                                                cy="50%"
+                                                innerRadius={60}
+                                                outerRadius={90}
+                                                paddingAngle={5}
+                                                dataKey="value"
+                                            >
+                                                {chartData.map((entry, index) => (
+                                                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                                ))}
+                                            </Pie>
+                                            <Tooltip 
+                                                contentStyle={{ backgroundColor: 'oklch(var(--b1))', borderColor: 'oklch(var(--b3))', borderRadius: '0.5rem' }}
+                                                itemStyle={{ color: 'oklch(var(--bc))' }}
+                                            />
+                                            <Legend verticalAlign="bottom" height={36} />
+                                        </PieChart>
+                                    </ResponsiveContainer>
+                                ) : (
+                                    <div className="flex h-full items-center justify-center opacity-50 text-sm">
+                                        Noch keine Download-Daten vorhanden.
+                                    </div>
                                 )}
-                            </ul>
+                            </div>
                         </div>
                     </div>
                 </div>

@@ -1,10 +1,10 @@
 <?php
 
-namespace AppHttpControllers;
+namespace App\Http\Controllers;
 
-use AppModelsGallery;
-use IlluminateHttpRequest;
-use AppServicesWatermarkService;
+use App\Models\Gallery;
+use Illuminate\Http\Request;
+use App\Services\WatermarkService;
 
 class FileDeliveryController extends Controller
 {
@@ -15,7 +15,7 @@ class FileDeliveryController extends Controller
 
         if (!$gallery->is_public) {
             if (!$user) abort(401, 'Unauthorized');
-            if (!$user->is_admin && !$user->galleries()->where('galleries.id', $gallery->id)->exists()) abort(403, 'Forbidden');
+            if (!$user->canAccessGallery($gallery->id)) abort(403, 'Forbidden');
         }
 
         $isGuest = !$user;
@@ -23,7 +23,6 @@ class FileDeliveryController extends Controller
         $baseStoragePath = env('PHOTO_STORAGE_PATH', base_path('../photos'));
         $watermarkService = app(WatermarkService::class);
 
-        // Nutze $gallery->id für den physischen Pfad
         if (str_starts_with($request->path(), "media/$slug/_thumbs/")) {
             $sourcePath = $baseStoragePath . '/' . $gallery->id . '/_thumbs/' . $cleanFilename;
             $path = $sourcePath;
@@ -55,11 +54,16 @@ class FileDeliveryController extends Controller
         if (!file_exists($path)) abort(404, 'File not found');
 
         $mime = mime_content_type($path);
+        
+        $proxyHeader = env('PROXY_DELIVERY_HEADER', false);
 
-        if (env('USE_X_ACCEL_REDIRECT', false)) {
+        if ($proxyHeader) {
+            $deliveryPath = (strtolower($proxyHeader) === 'x-sendfile') ? $path : $xAccelPath;
+            
             return response('', 200)->withHeaders([
                 'Content-Type' => $mime,
-                'X-Accel-Redirect' => $xAccelPath
+                'Cache-Control' => 'public, max-age=31536000, immutable',
+                $proxyHeader => $deliveryPath
             ]);
         }
 

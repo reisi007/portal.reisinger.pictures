@@ -18,7 +18,6 @@ class SearchController extends Controller
 
         $user = auth('api')->user();
         
-        // Rechte sammeln
         $allowedGalleryIds = $user && $user->is_admin
             ? Gallery::pluck('id')->toArray()
             : ($user ? $user->galleries()->pluck('galleries.id')->toArray() : []);
@@ -30,7 +29,6 @@ class SearchController extends Controller
             return response()->json(['galleries' => [], 'photos' => []]);
         }
 
-        // Native Meilisearch Query via Laravel Scout - EXTREM SCHNELL!
         $photos = Photo::search($q)->whereIn('gallery_id', $allowedGalleryIds)->take(100)->get();
 
         $photos->transform(function($p) {
@@ -40,7 +38,6 @@ class SearchController extends Controller
             return $p;
         });
 
-        // Native Meilisearch Query für die Galerien
         $galleries = Gallery::search($q)->whereIn('id', $allowedGalleryIds)->take(50)->get();
 
         return response()->json([
@@ -56,7 +53,7 @@ class SearchController extends Controller
 
         if (!$photo->gallery->is_public) {
             if (!$user) return response()->json(['error' => 'Unauthenticated'], 401);
-            if (!$user->is_admin && !$user->galleries()->where('galleries.id', $photo->gallery_id)->exists()) {
+            if (!$user->canAccessGallery($photo->gallery_id)) {
                 return response()->json(['error' => 'Kein Zugriff auf dieses Foto.'], 403);
             }
         }
@@ -68,7 +65,6 @@ class SearchController extends Controller
         while ($groupId) {
             $group = GalleryGroup::find($groupId);
             if ($group) {
-                // Den temporären Pfad bis zu dieser Gruppe bauen
                 $gPath = $group->slug;
                 $pGroup = $group->parent;
                 while($pGroup) { $gPath = $pGroup->slug . '/' . $gPath; $pGroup = $pGroup->parent; }

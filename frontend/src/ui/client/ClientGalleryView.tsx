@@ -1,6 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useParams, useNavigate, Navigate } from 'react-router-dom';
 import { useGallery } from '../../logic/useGallery';
+import { useAuth } from '../../logic/useAuth';
+import { apiMutate } from '../../api';
 import PhotoSwipeLightbox from 'photoswipe/lightbox';
 import 'photoswipe/style.css';
 
@@ -11,6 +13,8 @@ export default function ClientGalleryView() {
 
     const navigate = useNavigate();
     const { gallery, photos, totalPhotos, isLoading, isError, ratePhoto, size, setSize, isReachingEnd } = useGallery(slug);
+    const { user } = useAuth();
+    
     const galleryRef = useRef<HTMLDivElement>(null);
     const [finishing, setFinishing] = useState(false);
 
@@ -30,7 +34,6 @@ export default function ClientGalleryView() {
                                 const desc = currSlideElement.getAttribute('data-desc') || '';
                                 const artist = currSlideElement.getAttribute('data-artist') || '';
                                 
-                                // FIX: Prevention of XSS Vulnerability
                                 el.innerHTML = ''; 
                                 
                                 if (title || desc) {
@@ -72,13 +75,11 @@ export default function ClientGalleryView() {
         if (!window.confirm('Auswahl wirklich abschließen? Der Fotograf wird benachrichtigt.')) return;
         setFinishing(true);
         try {
-            const res = await fetch('/api/galleries/' + gallery!.id + '/finish-rating', {
-                method: 'POST',
-                headers: { 'Authorization': 'Bearer ' + (localStorage.getItem('rp_jwt') || '') }
-            });
-            if (res.ok) alert('Der Fotograf wurde erfolgreich benachrichtigt!');
-            else alert('Fehler beim Senden der Benachrichtigung.');
-        } catch (e) { alert('Netzwerkfehler'); }
+            await apiMutate('/api/galleries/' + gallery!.id + '/finish-rating', 'POST');
+            alert('Der Fotograf wurde erfolgreich benachrichtigt!');
+        } catch (e) { 
+            alert('Fehler beim Senden der Benachrichtigung.'); 
+        }
         setFinishing(false);
     };
 
@@ -91,7 +92,7 @@ export default function ClientGalleryView() {
     if (isError || !gallery) return <div className="p-8 text-center text-error">Galerie nicht gefunden oder Zugriff verweigert.</div>;
 
     return (
-        <div className="container mx-auto p-4 md:p-8">
+        <div className="container mx-auto p-4 md:p-8 relative">
             <button onClick={() => navigate('/')} className="btn btn-sm btn-ghost mb-4">&larr; Zurück zur Übersicht</button>
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
                 <div>
@@ -100,7 +101,7 @@ export default function ClientGalleryView() {
                 </div>
                 
                 <div className="flex gap-2">
-                    {gallery.type === 'selection' && (
+                    {gallery.type === 'selection' && user && (
                         <button onClick={handleFinishRating} disabled={finishing} className="btn btn-success text-white">
                             {finishing ? <span className="loading loading-spinner"></span> : <span className="iconify mdi--check-all"></span>}
                             Auswahl abschließen
@@ -135,14 +136,16 @@ export default function ClientGalleryView() {
 
                         <div className="card-body p-4 bg-base-100 flex flex-col gap-3">
                             {gallery.type === 'selection' ? (
-                                <>
-                                    <div className="rating rating-sm justify-center">
-                                        {[1, 2, 3, 4, 5].map(star => (
-                                            <input key={star} type="radio" className={"mask mask-star-2 " + (photo.rating >= star ? 'bg-orange-400' : 'bg-base-300')} checked={photo.rating === star} onChange={() => ratePhoto(photo.id, star, photo.comment || '')} />
-                                        ))}
-                                    </div>
-                                    <input type="text" placeholder="Kommentar..." defaultValue={photo.comment || ''} onBlur={(e) => ratePhoto(photo.id, photo.rating || 0, e.target.value)} className="input input-bordered input-sm w-full" />
-                                </>
+                                user ? (
+                                    <>
+                                        <div className="rating rating-sm justify-center">
+                                            {[1, 2, 3, 4, 5].map(star => (
+                                                <input key={star} type="radio" className={"mask mask-star-2 " + (photo.rating >= star ? 'bg-orange-400' : 'bg-base-300')} checked={photo.rating === star} onChange={() => ratePhoto(photo.id, star, photo.comment || '')} />
+                                            ))}
+                                        </div>
+                                        <input type="text" placeholder="Kommentar..." defaultValue={photo.comment || ''} onBlur={(e) => ratePhoto(photo.id, photo.rating || 0, e.target.value)} className="input input-bordered input-sm w-full" />
+                                    </>
+                                ) : null
                             ) : (
                                 <button onClick={() => window.open('/api/photos/' + photo.id + '/download', '_self')} className="btn btn-secondary btn-sm">Einzel-Download</button>
                             )}

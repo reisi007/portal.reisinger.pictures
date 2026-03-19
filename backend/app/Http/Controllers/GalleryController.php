@@ -8,6 +8,7 @@ use App\Models\Gallery;
 use App\Models\Photo;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\File;
 use Illuminate\Support\Str;
 
 class GalleryController extends Controller
@@ -22,11 +23,30 @@ class GalleryController extends Controller
             return ['groups' => $groups, 'root_galleries' => $rootGalleries];
         });
 
-        // Filtere die Galerien im Backend, falls der Parameter übergeben wurde
         $filterType = $request->query('filter_type');
         if ($filterType) {
-            // In Array umwandeln, um das gecachte Objekt nicht zu mutieren
             $treeArray = json_decode(json_encode($tree), true);
+
+        if (!$user->is_admin && $user->is_photographer) {
+            $allowedGalleryIds = $user->galleries()->pluck('galleries.id')->toArray();
+            
+            $filterNode = function($groups) use (&$filterNode, $allowedGalleryIds) {
+                $result = [];
+                foreach ($groups as $group) {
+                    if (isset($group['galleries'])) {
+                        $group['galleries'] = array_values(array_filter($group['galleries'], fn($g) => in_array($g['id'], $allowedGalleryIds)));
+                    }
+                    if (isset($group['children'])) {
+                        $group['children'] = $filterNode($group['children']);
+                    }
+                    $result[] = $group;
+                }
+                return $result;
+            };
+
+            $treeArray['groups'] = $filterNode($treeArray['groups']);
+            $treeArray['root_galleries'] = array_values(array_filter($treeArray['root_galleries'], fn($g) => in_array($g['id'], $allowedGalleryIds)));
+        }
 
             $filterNode = function($groups) use (&$filterNode, $filterType) {
                 $result = [];
@@ -88,6 +108,11 @@ class GalleryController extends Controller
             'gallery_group_id' => $request->gallery_group_id,
         ]);
 
+        $user = auth('api')->user();
+        if ($user && !$user->is_admin && $user->is_photographer) {
+            $user->galleries()->syncWithoutDetaching([$gallery->id]);
+        }
+
         return response()->json(['success' => true, 'gallery' => $gallery]);
     }
 
@@ -113,17 +138,8 @@ class GalleryController extends Controller
         $baseStoragePath = env('PHOTO_STORAGE_PATH', base_path('../photos'));
         $targetDir = $baseStoragePath . '/' . $gallery->id;
         
-        if (is_dir($targetDir)) {
-            $files = new \RecursiveIteratorIterator(
-                new \RecursiveDirectoryIterator($targetDir, \RecursiveDirectoryIterator::SKIP_DOTS),
-                \RecursiveIteratorIterator::CHILD_FIRST
-            );
-            foreach ($files as $fileinfo) {
-                $todo = ($fileinfo->isDir() ? 'rmdir' : 'unlink');
-                @$todo($fileinfo->getRealPath());
-            }
-            @rmdir($targetDir);
-        }
+        File::deleteDirectory($targetDir);
+        
         $gallery->delete();
         return response()->json(['success' => true]);
     }

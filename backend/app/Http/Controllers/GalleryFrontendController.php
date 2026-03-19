@@ -16,7 +16,7 @@ class GalleryFrontendController extends Controller
 
         if (!$gallery->is_public) {
             if (!$user) return response()->json(['error' => 'Unauthenticated'], 401);
-            if (!$user->is_admin && !$user->galleries()->where('galleries.id', $gallery->id)->exists()) {
+            if (!$user->canAccessGallery($gallery->id)) {
                 return response()->json(['error' => 'Kein Zugriff auf diese Galerie.'], 403);
             }
         }
@@ -62,9 +62,8 @@ class GalleryFrontendController extends Controller
 
         if (!$user) return response()->json(['error' => 'Unauthenticated'], 401);
 
-        // FIX: IDOR Prevention
         if (!$photo->gallery->is_public) {
-            if (!$user->is_admin && !$user->galleries()->where('galleries.id', $photo->gallery_id)->exists()) {
+            if (!$user->canAccessGallery($photo->gallery_id)) {
                 return response()->json(['error' => 'Kein Zugriff auf dieses Foto.'], 403);
             }
         }

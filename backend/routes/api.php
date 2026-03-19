@@ -18,15 +18,17 @@ use App\Http\Controllers\PhotoController;
 use App\Http\Controllers\StatsController;
 use App\Http\Controllers\EmailTemplateController;
 
-Route::post('/auth/login', [AuthController::class, 'login']);
-Route::post('/auth/register', [AuthController::class, 'register']);
+Route::middleware('throttle:10,1')->group(function () {
+    Route::post('/auth/login', [AuthController::class, 'login']);
+    Route::post('/auth/register', [AuthController::class, 'register']);
+});
 Route::get('/ping', function() { return response()->json(['message' => 'API OK']); });
 
 Route::get('/sitemap-galleries.xml', [SitemapController::class, 'galleries']);
 Route::get('/sitemap-images.xml', [SitemapController::class, 'images']);
 
 Route::get('/invites/{token}', [InviteController::class, 'check']);
-Route::post('/invites/redeem', [InviteController::class, 'redeem']);
+Route::middleware('throttle:10,1')->post('/invites/redeem', [InviteController::class, 'redeem']);
 
 Route::get('/search', [SearchController::class, 'search']);
 Route::get('/photos/{id}/context', [SearchController::class, 'photoContext']);

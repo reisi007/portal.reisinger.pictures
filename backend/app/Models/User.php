@@ -1,11 +1,11 @@
 <?php
 
-namespace AppModels;
+namespace App\Models;
 
-use IlluminateDatabaseEloquentFactoriesHasFactory;
-use IlluminateFoundationAuthUser as Authenticatable;
-use IlluminateNotificationsNotifiable;
-use PHPOpenSourceSaverJWTAuthContractsJWTSubject;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Notifications\Notifiable;
+use PHPOpenSourceSaver\JWTAuth\Contracts\JWTSubject;
 
 class User extends Authenticatable implements JWTSubject
 {
@@ -39,7 +39,17 @@ class User extends Authenticatable implements JWTSubject
         return $this->roles()->count() === 0 && $this->galleryGroups()->count() === 0 && $this->galleries()->count() === 0;
     }
 
+    public function getIsPhotographerAttribute(): bool {
+        return $this->roles()->where('name', 'photographer')->exists();
+    }
+
     public function getIsAdminAttribute(): bool {
         return $this->roles()->where('name', 'admin')->exists();
+    }
+
+    public function canAccessGallery($galleryId): bool
+    {
+        if ($this->is_admin) return true;
+        return $this->galleries()->where('galleries.id', $galleryId)->exists();
     }
 }

@@ -6,6 +6,7 @@ export interface User {
     name: string;
     email: string;
     is_admin: boolean;
+    is_photographer: boolean;
     is_pending: boolean;
     can_edit_metadata: boolean;
 }

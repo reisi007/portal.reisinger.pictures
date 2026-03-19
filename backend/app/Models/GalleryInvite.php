@@ -11,6 +11,7 @@ class GalleryInvite extends Model
     protected $fillable = [
         'gallery_id',
         'token',
+        'name',
         'created_at'
     ];
 

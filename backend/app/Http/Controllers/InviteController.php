@@ -16,12 +16,17 @@ class InviteController extends Controller
 {
     public function generate(Request $request, $galleryId)
     {
+        $request->validate([
+            'name' => 'nullable|string|max:255'
+        ]);
+
         $gallery = Gallery::findOrFail($galleryId);
         $token = Str::random(64);
         
         GalleryInvite::create([
             'gallery_id' => $gallery->id,
-            'token' => $token
+            'token' => $token,
+            'name' => $request->name
         ]);
 
         return response()->json([
@@ -32,14 +37,18 @@ class InviteController extends Controller
 
     public function sendEmail(Request $request, $galleryId)
     {
-        $request->validate(['email' => 'required|email']);
+        $request->validate([
+            'email' => 'required|email',
+            'name' => 'nullable|string|max:255'
+        ]);
 
         $gallery = Gallery::findOrFail($galleryId);
         $token = Str::random(64);
         
         GalleryInvite::create([
             'gallery_id' => $gallery->id,
-            'token' => $token
+            'token' => $token,
+            'name' => $request->name
         ]);
 
         $link = url('/invite/' . $token);
@@ -54,7 +63,8 @@ class InviteController extends Controller
         
         return response()->json([
             'gallery_name' => $invite->gallery->name,
-            'requires_password' => !empty($invite->gallery->password_hash)
+            'requires_password' => !empty($invite->gallery->password_hash),
+            'invite_name' => $invite->name
         ]);
     }
 
@@ -62,8 +72,8 @@ class InviteController extends Controller
     {
         $request->validate([
             'token' => 'required|string',
-            'name' => 'required|string',
-            'email' => 'required|email',
+            'name' => 'nullable|string',
+            'email' => 'nullable|email',
             'password' => 'nullable|string'
         ]);
 
@@ -74,19 +84,32 @@ class InviteController extends Controller
             return response()->json(['error' => 'Das Galerie-Passwort ist nicht korrekt.'], 403);
         }
 
-        $user = User::where('email', $request->email)->first();
-        
-        if ($user) {
-            // FIX: Prevent Account Takeover
-            if ($user->password || $user->is_admin) {
-                return response()->json(['error' => 'Diese E-Mail ist bereits mit einem Passwort registriert. Bitte logge dich regulär ein.'], 403);
-            }
-            // Optional: Name aktualisieren, falls gewünscht.
+        if ($invite->name) {
+            // Benannter Invite: Erzeuge Dummy-Account on-the-fly
+            $email = Str::slug($invite->name) . '-' . substr($invite->token, 0, 8) . '@invite.local';
+            $user = User::firstOrCreate(
+                ['email' => $email],
+                ['name' => $invite->name]
+            );
         } else {
-            $user = User::create([
-                'email' => $request->email,
-                'name' => $request->name
-            ]);
+            // Klassischer anonymer Invite: E-Mail & Name sind zwingend
+            if (!$request->email || !$request->name) {
+                return response()->json(['error' => 'Name und E-Mail sind erforderlich.'], 400);
+            }
+
+            $user = User::where('email', $request->email)->first();
+            
+            if ($user) {
+                // Prevent Account Takeover
+                if ($user->password || $user->is_admin) {
+                    return response()->json(['error' => 'Diese E-Mail ist bereits mit einem Passwort registriert. Bitte logge dich regulär ein.'], 403);
+                }
+            } else {
+                $user = User::create([
+                    'email' => $request->email,
+                    'name' => $request->name
+                ]);
+            }
         }
 
         $user->galleries()->syncWithoutDetaching([$gallery->id]);

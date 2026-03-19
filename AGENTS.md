@@ -39,3 +39,7 @@ Please read the [ARCHITECTURE.md](ARCHITECTURE.md) file first.
 * **No Blind `firstOrCreate` in Auth:** Never issue a JWT for a user found via `firstOrCreate` on public/invite routes without verifying if the user already has a password or admin rights.
 * **XSS Prevention in 3rd Party Libs:** When using DOM manipulation for 3rd party libraries, data from the database MUST be escaped or injected safely.
 * **Legacy APIs (Lightroom):** Keep API endpoints backward compatible where possible.
+
+**8. Database & Migrations Rule (CRITICAL)**
+* During development, there must be exactly ONE migration file (`V001__initial_portal_schema.php`).
+* Do not create new migration files for schema changes. Instead, append or modify the existing `V001` file to keep the local setup clean and straightforward.

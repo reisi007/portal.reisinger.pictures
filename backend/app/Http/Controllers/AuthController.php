@@ -15,20 +15,22 @@ class AuthController extends Controller
     {
         $credentials = $request->only('email', 'password');
         
-        // 1. Check Admin Credentials (ENV)
-        $adminEmail = env('ADMIN_EMAIL', 'florian@reisinger.pictures');
-        $adminPass = env('ADMIN_PASSWORD', 'admin');
+        // 1. Check Admin Credentials (ENV) - ONLY IN LOCAL ENV
+        if (app()->environment('local')) {
+            $adminEmail = env('ADMIN_EMAIL', 'florian@reisinger.pictures');
+            $adminPass = env('ADMIN_PASSWORD', 'admin');
 
-        if ($credentials['email'] === $adminEmail && $credentials['password'] === $adminPass) {
-            $user = User::firstOrCreate(
-                ['email' => $adminEmail],
-                ['name' => 'Florian Reisinger']
-            );
-            $adminRole = Role::firstOrCreate(['name' => 'admin']);
-            $user->roles()->syncWithoutDetaching([$adminRole->id]);
+            if ($credentials['email'] === $adminEmail && $credentials['password'] === $adminPass) {
+                $user = User::firstOrCreate(
+                    ['email' => $adminEmail],
+                    ['name' => 'Florian Reisinger']
+                );
+                $adminRole = Role::firstOrCreate(['name' => 'admin']);
+                $user->roles()->syncWithoutDetaching([$adminRole->id]);
 
-            $token = Auth::guard('api')->login($user);
-            return $this->respondWithToken($token);
+                $token = Auth::guard('api')->login($user);
+                return $this->respondWithToken($token);
+            }
         }
 
         // 2. Check regular users in Database
@@ -86,6 +88,7 @@ class AuthController extends Controller
             'name' => $user->name,
             'email' => $user->email,
             'is_admin' => $user->is_admin,
+            'is_photographer' => $user->is_photographer,
             'is_pending' => $user->is_pending,
             'my_galleries' => $user->galleries ?? []
         ]);

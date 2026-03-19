@@ -6,6 +6,7 @@ use Illuminate\Console\Command;
 use App\Models\Gallery;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\File;
 
 class CleanupGalleries extends Command
 {
@@ -14,10 +15,7 @@ class CleanupGalleries extends Command
 
     public function handle()
     {
-        // Grace Periode in Monaten aus der .env lesen (Standard: 3 Monate)
         $graceMonths = env('GALLERY_CLEANUP_GRACE_MONTHS', 3);
-        
-        // Stichtag berechnen: Heute minus X Monate
         $cutoffDate = Carbon::now()->subMonths($graceMonths);
 
         $expiredGalleries = Gallery::whereNotNull('expires_at')
@@ -30,20 +28,8 @@ class CleanupGalleries extends Command
             $baseStoragePath = env('PHOTO_STORAGE_PATH', base_path('../photos'));
             $targetDir = $baseStoragePath . '/' . $gallery->id;
 
-            // Dateien physisch löschen
-            if (is_dir($targetDir)) {
-                $files = new \RecursiveIteratorIterator(
-                    new \RecursiveDirectoryIterator($targetDir, \RecursiveDirectoryIterator::SKIP_DOTS),
-                    \RecursiveIteratorIterator::CHILD_FIRST
-                );
-                foreach ($files as $fileinfo) {
-                    $todo = ($fileinfo->isDir() ? 'rmdir' : 'unlink');
-                    @$todo($fileinfo->getRealPath());
-                }
-                @rmdir($targetDir);
-            }
+            File::deleteDirectory($targetDir);
 
-            // Galerie aus der Datenbank löschen (Hard Delete)
             $galleryName = $gallery->name;
             $galleryExpire = $gallery->expires_at;
             $gallery->delete();
