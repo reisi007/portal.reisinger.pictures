@@ -9,33 +9,35 @@ use Illuminate\Support\Facades\DB;
 
 class GalleryFrontendController extends Controller
 {
-    /**
-     * Lädt die Galerie und liefert die Fotos echt paginiert zurück (Backend Pagination)
-     */
     public function show($slug)
     {
         $gallery = Gallery::where('slug', $slug)->firstOrFail();
-        $user = auth()->user();
+        $user = auth('api')->user();
 
-        // Security Check: Hat der User Rechte?
-        if (!$user->is_admin && !$user->galleries()->where('galleries.id', $gallery->id)->exists()) {
-            return response()->json(['error' => 'Kein Zugriff auf diese Galerie.'], 403);
+        if (!$gallery->is_public) {
+            if (!$user) return response()->json(['error' => 'Unauthenticated'], 401);
+            if (!$user->is_admin && !$user->galleries()->where('galleries.id', $gallery->id)->exists()) {
+                return response()->json(['error' => 'Kein Zugriff auf diese Galerie.'], 403);
+            }
         }
 
-        // Fotos paginieren (50 pro Seite)
         $photos = $gallery->photos()->paginate(50);
 
         $photos->getCollection()->transform(function ($photo) use ($gallery, $user) {
-            $baseUrl = '/photos/' . $gallery->slug;
+            $baseUrl = '/media/' . $gallery->slug;
             $photo->url = $baseUrl . '/' . $photo->filename;
             $photo->thumb_url = $baseUrl . '/_thumbs/' . md5($photo->filename . '1024') . '.webp';
             
-            $rating = DB::table('ratings')
-                ->where('photo_id', $photo->id)
-                ->where('user_id', $user->id)
-                ->first();
-                
-            $photo->rating = $rating ? $rating->rating : null; 
+            if ($user) {
+                $rating = DB::table('ratings')
+                    ->where('photo_id', $photo->id)
+                    ->where('user_id', $user->id)
+                    ->first();
+                $photo->rating = $rating ? $rating->rating : null; 
+            } else {
+                $photo->rating = null;
+            }
+
             return $photo;
         });
 
@@ -55,11 +57,20 @@ class GalleryFrontendController extends Controller
             'comment' => 'nullable|string'
         ]);
 
-        $photo = Photo::findOrFail($photoId);
-        $userId = auth()->id(); 
+        $photo = Photo::with('gallery')->findOrFail($photoId);
+        $user = auth('api')->user(); 
+
+        if (!$user) return response()->json(['error' => 'Unauthenticated'], 401);
+
+        // FIX: IDOR Prevention
+        if (!$photo->gallery->is_public) {
+            if (!$user->is_admin && !$user->galleries()->where('galleries.id', $photo->gallery_id)->exists()) {
+                return response()->json(['error' => 'Kein Zugriff auf dieses Foto.'], 403);
+            }
+        }
 
         DB::table('ratings')->updateOrInsert(
-            ['photo_id' => $photo->id, 'user_id' => $userId],
+            ['photo_id' => $photo->id, 'user_id' => $user->id],
             ['rating' => $request->rating, 'comment' => $request->comment ?? '']
         );
 

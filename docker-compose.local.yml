@@ -1,46 +1,22 @@
 version: '3.8'
-
 services:
   db:
     image: mariadb:10.11
     container_name: portal_db_local
     restart: unless-stopped
-    ports:
-      - "3306:3306"
+    ports: ["3306:3306"]
     environment:
       MYSQL_ROOT_PASSWORD: admin
       MYSQL_DATABASE: portal_db
       MYSQL_USER: portal_user
       MYSQL_PASSWORD: admin
-    volumes:
-      - db_data_local:/var/lib/mysql
-
+    volumes: ["db_data_local:/var/lib/mysql"]
   search:
     image: getmeili/meilisearch:v1.6
     container_name: portal_search_local
-    restart: unless-stopped
-    ports:
-      - "7700:7700"
     environment:
       MEILI_ENV: development
-      MEILI_NO_ANALYTICS: true
       MEILI_MASTER_KEY: local_meili_secret
-    volumes:
-      - search_data_local:/meili_data
-
-  flyway:
-    image: flyway/flyway:10-alpine
-    container_name: portal_flyway_local
-    depends_on:
-      - db
-    environment:
-      FLYWAY_URL: jdbc:mariadb://db:3306/portal_db
-      FLYWAY_USER: portal_user
-      FLYWAY_PASSWORD: admin
-    volumes:
-      - ./flyway/migrations:/flyway/sql
-    command: -connectRetries=60 migrate
-
+    ports: ["7700:7700"]
 volumes:
   db_data_local:
-  search_data_local:

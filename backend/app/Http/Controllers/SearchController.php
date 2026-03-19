@@ -9,9 +9,6 @@ use App\Models\Photo;
 
 class SearchController extends Controller
 {
-    /**
-     * Sucht über Scout in Meilisearch und filtert nach den Berechtigungen des Users.
-     */
     public function search(Request $request)
     {
         $q = $request->input('q', '');
@@ -19,32 +16,32 @@ class SearchController extends Controller
             return response()->json(['galleries' => [], 'photos' => []]);
         }
 
-        $user = auth()->user();
+        $user = auth('api')->user();
         
-        // Hole alle erlaubten Galerie-IDs für diesen User
-        $allowedGalleryIds = $user->is_admin
+        // Rechte sammeln
+        $allowedGalleryIds = $user && $user->is_admin
             ? Gallery::pluck('id')->toArray()
-            : $user->galleries()->pluck('galleries.id')->toArray();
+            : ($user ? $user->galleries()->pluck('galleries.id')->toArray() : []);
+
+        $publicGalleryIds = Gallery::where('is_public', true)->pluck('id')->toArray();
+        $allowedGalleryIds = array_unique(array_merge($allowedGalleryIds, $publicGalleryIds));
 
         if (empty($allowedGalleryIds)) {
             return response()->json(['galleries' => [], 'photos' => []]);
         }
 
-        // Fotos über Scout suchen. Wir holen etwas mehr (100) und filtern sie in PHP, 
-        // um komplexe Meilisearch filterableAttributes Konfigurationen beim MVP zu vermeiden.
-        $rawPhotos = Photo::search($q)->take(100)->get();
-        $photos = $rawPhotos->filter(fn($p) => in_array($p->gallery_id, $allowedGalleryIds))->values();
+        // Native Meilisearch Query via Laravel Scout - EXTREM SCHNELL!
+        $photos = Photo::search($q)->whereIn('gallery_id', $allowedGalleryIds)->take(100)->get();
 
         $photos->transform(function($p) {
             $p->load('gallery');
-            $baseUrl = '/photos/' . $p->gallery->slug;
+            $baseUrl = '/media/' . $p->gallery->slug;
             $p->thumb_url = $baseUrl . '/_thumbs/' . md5($p->filename . '1024') . '.webp';
             return $p;
         });
 
-        // Galerien über Scout suchen
-        $rawGalleries = Gallery::search($q)->take(50)->get();
-        $galleries = $rawGalleries->filter(fn($g) => in_array($g->id, $allowedGalleryIds))->values();
+        // Native Meilisearch Query für die Galerien
+        $galleries = Gallery::search($q)->whereIn('id', $allowedGalleryIds)->take(50)->get();
 
         return response()->json([
             'galleries' => $galleries,
@@ -52,36 +49,38 @@ class SearchController extends Controller
         ]);
     }
 
-    /**
-     * Liefert ein einzelnes Foto und seinen kompletten "Breadcrumb" Pfad zurück.
-     */
     public function photoContext($id)
     {
         $photo = Photo::with('gallery')->findOrFail($id);
-        $user = auth()->user();
+        $user = auth('api')->user();
 
-        // Auth Check
-        if (!$user->is_admin && !$user->galleries()->where('galleries.id', $photo->gallery_id)->exists()) {
-            return response()->json(['error' => 'Kein Zugriff auf dieses Foto.'], 403);
+        if (!$photo->gallery->is_public) {
+            if (!$user) return response()->json(['error' => 'Unauthenticated'], 401);
+            if (!$user->is_admin && !$user->galleries()->where('galleries.id', $photo->gallery_id)->exists()) {
+                return response()->json(['error' => 'Kein Zugriff auf dieses Foto.'], 403);
+            }
         }
 
         $breadcrumbs = [];
-        // Die Galerie selbst ist der letzte Brotkrümel (klickbar)
-        $breadcrumbs[] = ['name' => $photo->gallery->name, 'slug' => $photo->gallery->slug, 'type' => 'gallery'];
+        $breadcrumbs[] = ['name' => $photo->gallery->name, 'full_path' => $photo->gallery->full_path, 'type' => 'gallery'];
 
-        // Parent-Gruppen rekursiv auflösen
         $groupId = $photo->gallery->gallery_group_id;
         while ($groupId) {
             $group = GalleryGroup::find($groupId);
             if ($group) {
-                array_unshift($breadcrumbs, ['name' => $group->name, 'type' => 'group']);
+                // Den temporären Pfad bis zu dieser Gruppe bauen
+                $gPath = $group->slug;
+                $pGroup = $group->parent;
+                while($pGroup) { $gPath = $pGroup->slug . '/' . $gPath; $pGroup = $pGroup->parent; }
+                
+                array_unshift($breadcrumbs, ['name' => $group->name, 'full_path' => 'galleries/' . $gPath, 'type' => 'group']);
                 $groupId = $group->parent_id;
             } else {
                 break;
             }
         }
 
-        $baseUrl = '/photos/' . $photo->gallery->slug;
+        $baseUrl = '/media/' . $photo->gallery->slug;
         $photo->url = $baseUrl . '/' . $photo->filename;
         $photo->thumb_url = $baseUrl . '/_thumbs/' . md5($photo->filename . '1024') . '.webp';
 

@@ -1,15 +1,22 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { useGallery } from '../../logic/useGallery';
+import { useEmailTemplates } from '../../logic/useEmailTemplates';
 import PhotoSwipeLightbox from 'photoswipe/lightbox';
 import 'photoswipe/style.css';
+import EmailComposerModal from './components/EmailComposerModal';
 
 export default function AdminGalleryView() {
-    const { slug } = useParams<{ slug: string }>();
-    const { gallery, photos, totalPhotos, isLoading, isError, size, setSize, isReachingEnd, mutate } = useGallery(slug);
+    const params = useParams();
+    const splat = params['*'];
+    const slug = splat ? splat.split('/').pop() : '';
+
+    const { gallery, photos, isLoading, isError, size, setSize, isReachingEnd, mutate } = useGallery(slug);
+    const { templates } = useEmailTemplates();
+    
     const galleryRef = useRef<HTMLDivElement>(null);
     const [uploading, setUploading] = useState(false);
-    const [notifying, setNotifying] = useState(false);
+    const [isMailModalOpen, setIsMailModalOpen] = useState(false);
 
     useEffect(() => {
         let lightbox: PhotoSwipeLightbox | null = null;
@@ -37,20 +44,6 @@ export default function AdminGalleryView() {
         setUploading(false); mutate(); 
     };
 
-    const handleNotifyUsers = async () => {
-        if (!gallery || !window.confirm('Möchtest du alle berechtigten Kunden (inklusive vererbter Gruppenrechte) per E-Mail benachrichtigen?')) return;
-        setNotifying(true);
-        try {
-            const res = await fetch("/api/admin/galleries/" + gallery.id + "/notify", {
-                method: 'POST',
-                headers: { 'Authorization': 'Bearer ' + (localStorage.getItem('rp_jwt') || '') }
-            });
-            const data = await res.json();
-            alert(res.ok ? "Erfolg! Es wurden " + data.notified_count + " E-Mails versendet." : "Fehler beim Senden: " + data.message);
-        } catch(err) { alert('Netzwerkfehler'); }
-        setNotifying(false);
-    };
-
     if (isLoading && photos.length === 0) return <div className="flex h-screen items-center justify-center"><span className="loading loading-spinner"></span></div>;
     if (isError || !gallery) return <div className="p-8 text-center text-error">Galerie nicht gefunden.</div>;
 
@@ -60,9 +53,8 @@ export default function AdminGalleryView() {
                 <h1 className="text-3xl font-bold flex items-center gap-3">
                     <span className="iconify mdi--shield-account text-primary"></span> {gallery.name}
                 </h1>
-                <button onClick={handleNotifyUsers} disabled={notifying} className="btn btn-outline btn-info">
-                    {notifying ? <span className="loading loading-spinner"></span> : <span className="iconify mdi--email-fast"></span>}
-                    Kunden benachrichtigen
+                <button onClick={() => setIsMailModalOpen(true)} className="btn btn-outline btn-info">
+                    <span className="iconify mdi--email-fast"></span> Kunden benachrichtigen
                 </button>
             </div>
 
@@ -87,6 +79,13 @@ export default function AdminGalleryView() {
             {!isReachingEnd && photos.length > 0 && (
                 <div className="text-center mt-8"><button className="btn btn-outline" onClick={() => setSize(size + 1)}>Mehr laden</button></div>
             )}
+
+            <EmailComposerModal 
+                isOpen={isMailModalOpen} 
+                onClose={() => setIsMailModalOpen(false)} 
+                galleryId={gallery.id} 
+                templates={templates} 
+            />
         </div>
     );
 }

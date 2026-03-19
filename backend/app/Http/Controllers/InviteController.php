@@ -14,9 +14,6 @@ use App\Mail\GalleryInviteMail;
 
 class InviteController extends Controller
 {
-    /**
-     * Erstellt einen neuen Magic-Link-Token für eine Galerie.
-     */
     public function generate(Request $request, $galleryId)
     {
         $gallery = Gallery::findOrFail($galleryId);
@@ -33,9 +30,6 @@ class InviteController extends Controller
         ]);
     }
 
-    /**
-     * Sendet einen Magic-Link direkt per E-Mail an den Gast.
-     */
     public function sendEmail(Request $request, $galleryId)
     {
         $request->validate(['email' => 'required|email']);
@@ -54,9 +48,6 @@ class InviteController extends Controller
         return response()->json(['success' => true]);
     }
 
-    /**
-     * Prüft die Gültigkeit eines Gast-Tokens.
-     */
     public function check($token)
     {
         $invite = GalleryInvite::where('token', $token)->with('gallery')->firstOrFail();
@@ -67,10 +58,6 @@ class InviteController extends Controller
         ]);
     }
 
-    /**
-     * Wandelt den Token + Gast-Daten in ein gültiges JWT um.
-     * Dies ist der Haupt-Login für alle Kunden (Selection & Delivery).
-     */
     public function redeem(Request $request)
     {
         $request->validate([
@@ -83,27 +70,33 @@ class InviteController extends Controller
         $invite = GalleryInvite::where('token', $request->token)->with('gallery')->firstOrFail();
         $gallery = $invite->gallery;
 
-        // Passwort-Check falls für Galerie aktiviert
         if ($gallery->password_hash && !Hash::check($request->password, $gallery->password_hash)) {
             return response()->json(['error' => 'Das Galerie-Passwort ist nicht korrekt.'], 403);
         }
 
-        // Gast-User finden oder neu anlegen
-        $user = User::firstOrCreate(
-            ['email' => $request->email],
-            ['name' => $request->name]
-        );
+        $user = User::where('email', $request->email)->first();
+        
+        if ($user) {
+            // FIX: Prevent Account Takeover
+            if ($user->password || $user->is_admin) {
+                return response()->json(['error' => 'Diese E-Mail ist bereits mit einem Passwort registriert. Bitte logge dich regulär ein.'], 403);
+            }
+            // Optional: Name aktualisieren, falls gewünscht.
+        } else {
+            $user = User::create([
+                'email' => $request->email,
+                'name' => $request->name
+            ]);
+        }
 
-        // Explizite Berechtigung für diese Galerie verknüpfen
         $user->galleries()->syncWithoutDetaching([$gallery->id]);
 
-        // Zustandslose Authentifizierung via JWT
         $jwt = Auth::guard('api')->login($user);
 
         return response()->json([
             'success' => true,
             'access_token' => $jwt,
-            'slug' => $gallery->slug
+            'full_path' => $gallery->full_path
         ]);
     }
 }

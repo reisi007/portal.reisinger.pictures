@@ -1,9 +1,9 @@
 <?php
 
-namespace App\Models;
+namespace AppModels;
 
-use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Facades\Cache;
+use IlluminateDatabaseEloquentModel;
+use IlluminateSupportFacadesCache;
 
 class GalleryGroup extends Model
 {
@@ -12,6 +12,7 @@ class GalleryGroup extends Model
     protected $fillable = [
         'parent_id',
         'name',
+        'slug',
         'is_public',
         'deleted_at'
     ];
@@ -23,17 +24,15 @@ class GalleryGroup extends Model
 
     protected static function booted()
     {
-        // Cache leeren, sobald sich eine Gruppe ändert
-        static::saved(function () {
-            Cache::forget('gallery_tree_admin');
-        });
-        static::deleted(function () {
-            Cache::forget('gallery_tree_admin');
-        });
+        static::saved(function () { Cache::forget('gallery_tree_admin'); });
+        static::deleted(function () { Cache::forget('gallery_tree_admin'); });
     }
 
-    // Die Magie für den rekursiven Baum: 
-    // Lädt automatisch alle Untergruppen und deren Galerien mit!
+    public function parent()
+    {
+        return $this->belongsTo(GalleryGroup::class, 'parent_id');
+    }
+
     public function children()
     {
         return $this->hasMany(GalleryGroup::class, 'parent_id')->with(['children', 'galleries']);

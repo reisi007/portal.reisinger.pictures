@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../logic/useAuth';
 
 export default function Login() {
@@ -46,6 +46,9 @@ export default function Login() {
                             <button type="submit" className="btn btn-primary w-full text-lg">Anmelden</button>
                         </div>
                     </form>
+                    <div className="mt-4 text-center text-sm">
+                        <Link to="/register" className="link link-hover text-base-content/70">Noch kein Account? Registrieren.</Link>
+                    </div>
                 </div>
             </div>
         </div>

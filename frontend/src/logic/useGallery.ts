@@ -12,7 +12,7 @@ export interface Photo {
     url: string;
     thumb_url: string;
     rating: number;
-    comment: string; // NEU: Text-Kommentar
+    comment: string;
 }
 
 export interface PaginatedGalleryResponse {
@@ -34,7 +34,6 @@ export function useGallery(slug: string | undefined) {
         getKey,
         fetcher,
         {
-            // SWR Polling Magic: Alle 10 Sekunden aktualisieren, wenn is_live=true
             refreshInterval: (latestData) => {
                 const isLive = latestData?.some(page => page.gallery.is_live);
                 return isLive ? 10000 : 0;
@@ -49,7 +48,6 @@ export function useGallery(slug: string | undefined) {
     const totalPhotos = data?.[0]?.total || 0;
 
     const ratePhoto = async (photoId: number, rating: number, comment: string = '') => {
-        // Optimistic UI Update
         if (data) {
             const newData = data.map(page => ({
                 ...page,
@@ -58,7 +56,7 @@ export function useGallery(slug: string | undefined) {
             mutate(newData, false);
         }
 
-        await fetch("/api/photos/" + photoId + "/rate", {
+        const res = await fetch("/api/photos/" + photoId + "/rate", {
             method: 'POST',
             headers: { 
                 'Content-Type': 'application/json',
@@ -66,6 +64,11 @@ export function useGallery(slug: string | undefined) {
             },
             body: JSON.stringify({ rating, comment })
         });
+
+        if (res.status === 401) {
+            // Falls ein Gast versucht zu bewerten, zur Anmeldung zwingen
+            window.location.href = '/login';
+        }
         
         mutate(); 
     };

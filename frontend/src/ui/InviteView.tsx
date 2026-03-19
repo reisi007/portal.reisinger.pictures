@@ -15,7 +15,7 @@ export default function InviteView() {
     const [password, setPassword] = useState('');
 
     useEffect(() => {
-        fetch(`/api/invites/${token}`)
+        fetch('/api/invites/' + token)
             .then(res => {
                 if (!res.ok) throw new Error('Dieser Einladungslink ist ungültig oder abgelaufen.');
                 return res.json();
@@ -45,9 +45,8 @@ export default function InviteView() {
             const data = await res.json();
             if (!res.ok) throw new Error(data.error || 'Fehler beim Beitritt.');
             
-            // JWT speichern und zur Galerie navigieren
             localStorage.setItem('rp_jwt', data.access_token);
-            navigate(`/g/${data.slug}`, { replace: true });
+            navigate('/' + data.full_path, { replace: true });
         } catch (err: any) {
             setError(err.message);
         }
