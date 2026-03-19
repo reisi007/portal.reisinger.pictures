@@ -9,6 +9,7 @@ export default function InviteView() {
     const [error, setError] = useState('');
     const [galleryName, setGalleryName] = useState('');
     const [requiresPassword, setRequiresPassword] = useState(false);
+    const [inviteName, setInviteName] = useState('');
     
     const [name, setName] = useState('');
     const [email, setEmail] = useState('');
@@ -23,6 +24,7 @@ export default function InviteView() {
             .then(data => {
                 setGalleryName(data.gallery_name);
                 setRequiresPassword(data.requires_password);
+                setInviteName(data.invite_name || '');
                 setLoading(false);
             })
             .catch(err => {
@@ -72,27 +74,43 @@ export default function InviteView() {
                     
                     {error && <div className="alert alert-error text-sm py-2 mb-4">{error}</div>}
                     
-                    <form onSubmit={handleSubmit} className="space-y-4">
-                        <div className="form-control">
-                            <label className="label"><span className="label-text font-bold">Dein Name</span></label>
-                            <input type="text" required value={name} onChange={e => setName(e.target.value)} className="input input-bordered" placeholder="z.B. Maria Muster" />
+                    {inviteName && !requiresPassword ? (
+                        <div className="form-control mt-4">
+                            <button onClick={handleSubmit} className="btn btn-primary w-full text-lg">Weiter als {inviteName}</button>
                         </div>
-                        <div className="form-control">
-                            <label className="label"><span className="label-text font-bold">Deine E-Mail</span></label>
-                            <input type="email" required value={email} onChange={e => setEmail(e.target.value)} className="input input-bordered" placeholder="maria@beispiel.de" />
-                        </div>
-                        
-                        {requiresPassword && (
-                            <div className="form-control pt-2">
-                                <label className="label"><span className="label-text font-bold text-warning">Galerie-Passwort</span></label>
-                                <input type="password" required value={password} onChange={e => setPassword(e.target.value)} className="input input-bordered input-warning" />
+                    ) : (
+                        <form onSubmit={handleSubmit} className="space-y-4">
+                            {!inviteName && (
+                                <>
+                                    <div className="form-control">
+                                        <label className="label"><span className="label-text font-bold">Dein Name</span></label>
+                                        <input type="text" required value={name} onChange={e => setName(e.target.value)} className="input input-bordered" placeholder="z.B. Maria Muster" />
+                                    </div>
+                                    <div className="form-control">
+                                        <label className="label"><span className="label-text font-bold">Deine E-Mail</span></label>
+                                        <input type="email" required value={email} onChange={e => setEmail(e.target.value)} className="input input-bordered" placeholder="maria@beispiel.de" />
+                                    </div>
+                                </>
+                            )}
+                            
+                            {inviteName && requiresPassword && (
+                                <p className="text-sm opacity-70">Hallo <strong>{inviteName}</strong>, bitte gib das Galerie-Passwort ein.</p>
+                            )}
+
+                            {requiresPassword && (
+                                <div className="form-control pt-2">
+                                    <label className="label"><span className="label-text font-bold text-warning">Galerie-Passwort</span></label>
+                                    <input type="password" required value={password} onChange={e => setPassword(e.target.value)} className="input input-bordered input-warning" />
+                                </div>
+                            )}
+                            
+                            <div className="form-control mt-6">
+                                <button type="submit" className="btn btn-primary w-full text-lg">
+                                    {inviteName ? `Weiter als ${inviteName}` : 'Galerie öffnen'}
+                                </button>
                             </div>
-                        )}
-                        
-                        <div className="form-control mt-6">
-                            <button type="submit" className="btn btn-primary w-full text-lg">Galerie öffnen</button>
-                        </div>
-                    </form>
+                        </form>
+                    )}
                 </div>
             </div>
         </div>

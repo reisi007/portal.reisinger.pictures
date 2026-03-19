@@ -1,28 +1,35 @@
 # Backlog, Security & Future Architectures
 
-## 🔐 Auth, Registrierung & User Management
-* [ ] **Neue Rolle: Fotograf:** Das System unterstützt mehrere Fotografen. Nicht jeder Fotograf ist Admin. Fotografen haben eigene Profile (Name, Metadaten/Copyright-Infos) und können eigene Galerien verwalten oder zugewiesen bekommen.
-* [ ] **Offene Registrierung (Standard):** Frontend-UI für die Registrierung bauen. Registrierung ist der Standardweg.
+## 🖼️ Architektur, Performance & Bildverarbeitung (Priorität 2)
 
-## 🛡️ Security & File Access
-* [ ] **Kein direkter Dateizugriff:** X-Accel-Redirect für die Produktion ausarbeiten, Nginx Location mit `internal;` sichern. Überlegen, wie das lokal mit Herd funktioniert und so implementieren
-* [ ] **Sichere Admin-Credentials:** Fallback Admin-Credentials (`env('ADMIN_EMAIL')` / `admin`) im `AuthController` strikt auf die lokale Entwicklungsumgebung (`app()->environment('local')`) beschränken.
-* [ ] **Rate-Limiting:** Throttle-Middleware für sensible Routen (`/api/auth/login`, `/api/auth/register`, `/api/invites/redeem`) hinzufügen, um Brute-Force-Angriffe zu verhindern.
-* [ ] **Sichere Shell-Kommandos:** Aufrufe von `exiftool` (`exec`, `shell_exec`) in `Symfony\Component\Process\Process` refactoren, um das Restrisiko von Command-Injections komplett zu eliminieren.
+* [ ] **ARCHITEKTUR - Harte Dateisystem-Operationen abstrahieren:**
+  * **Wo:** `CleanupGalleries.php`, `PhotoController.php`, `ImageController.php`, `FtpController.php`.
+  * **Problem:** Es werden native PHP-Befehle wie `mkdir()`, `rmdir()`, `unlink()`, und `glob()` in Kombination mit `base_path('../photos')` verwendet.
+  * **Lösung:** In der `config/filesystems.php` eine eigene Disk `photos` anlegen. Überall im Code die native Laravel Storage Facade (`Storage::disk('photos')->delete()`, `Storage::disk('photos')->makeDirectory()`) verwenden. Das bereitet das System auf zukünftige Amazon S3 Migrationen vor.
 
-## 🌍 Frontend Routing & Public Access
-* [ ] **Anonymen Zugriff erlauben:** Bei Aufruf von `/g/{slug}` checken ob Galerie public ist. Wenn ja, auch ohne JWT rendern. --> warte, das sollte zumindest in react /gallery sein und REST konforme URLs ausliefern
-* [ ] **Schönere Kunden-URLs:** Konzept für "schönere" und kürzere URLs ausarbeiten. (REST basiert, ganze Wörter, Gallerien sollen unter dem Parent sichtbar sein)
-* [ ] **Wasserzeichen für Gäste:** Gäste dürfen öffentliche Galerien ansehen und herunterladen, erhalten aber serverseitig Wasserzeichen.
+* [ ] **ARCHITEKTUR - Synchrone Bildverarbeitung auflösen (Lightroom Performance):**
+  * **Wo:** `backend/app/Http/Controllers/ImageController.php`.
+  * **Problem:** Wenn das Lightroom-Plugin 100 Bilder asynchron hochlädt, starten im Backend 100 parallele PHP-Prozesse, die synchron `exiftool` und `Imagick` (Thumbnail Generierung) ausführen. Das führt bei großen Galerien garantiert zu Timeouts und Server-Crashs.
+  * **Lösung:** 1. Einen Laravel Job erstellen: `php artisan make:job ProcessImageUpload`.
+    2. Der Controller verschiebt die Datei per `move_uploaded_file` in einen temporären `/photos/temp` Ordner und speichert das Foto-Model sofort mit einem Status `is_processing = true`. 
+    3. Der Controller antwortet **sofort** mit `202 Accepted` oder `200 OK`.
+    4. Der Dispatcher schiebt den Job in die Datenbank-Queue. Der Job führt `exiftool` und `Imagick` aus, verschiebt die Dateien an den finalen Ort (`/photos/{gallery_id}/...`) und aktualisiert das Datenbank-Model.
 
-## 🖼️ Bildverarbeitung, FTP & Wasserzeichen
-* [ ] **Persönliche FTP-Inbox pro Fotograf:** Eigener FTP Ordner pro Fotograf. Auto-Zuweisung & Metadaten aktualisieren bei neuen JPEGs.
-* [ ] **Wasserzeichen-Optimierung (SVG -> PNG):** Globale SVG serverseitig in vordefinierte PNG-Größenstufen rendern.
-* [ ] **ZIP-Download asynchron (Optional):** Evaluieren, ob IPTC-Metadaten für ZIPs asynchron im Hintergrund (Queue) vorbereitet werden können, **ohne** den sofortigen Download-Start (Stream) für den Kunden zu verzögern.
+* [ ] **ZIP-Download asynchron gestalten (Optional):**
+  * **Wo:** `backend/app/Http/Controllers/DownloadController.php`.
+  * **Problem:** Das Hinzufügen des Wasserzeichens und das Schreiben der IPTC-Daten (Exiftool) passiert *während* der ZIP-Stream bereits an den Browser ausgeliefert wird. Das ist extrem fehleranfällig für Netzwerk-Timeouts.
+  * **Lösung:** Evaluieren, ob bei einem ZIP-Klick erst eine E-Mail getriggert wird ("Dein Download wird vorbereitet"). Im Hintergrund erstellt ein Queue-Worker das fertige ZIP. Sobald fertig, bekommt der User eine Mail mit dem finalen, statischen Download-Link.
 
-## ⚙️ Workflow & Dashboard Features
-* [ ] **Audit-Log Viewer:** Eigene Tabellen-Ansicht im Dashboard um Downloads auszuwerten (DSGVO-konform ohne IPs). Statistiken wer (nach email domain gruppiert) wie viel runterlädt (im vergleich zu anonymen Nutzern))
-* [x] **Suche**: Bilder und Gallerien sollen mittels meilisearch gesucht werden können. Inklusive backend und Frontend Implementierung
+## 📊 Analytics & Suche (Priorität 3)
 
-## 🏗️ Architektur
-* [x] **Migration auf Laravel Migrations:** Flyway restlos entfernen und Datenbank-Schema vollständig über Laravel-Migrations abbilden.
+* [ ] **Meilisearch URL-Limitierung für Admins präventiv abfangen:**
+  * **Wo:** `backend/app/Http/Controllers/SearchController.php` in `search()`.
+  * **Problem:** Aktuell lädt ein Admin alle existierenden `gallery_id`s in ein Array (`Gallery::pluck('id')->toArray()`) und übergibt diese an die Scout Suchanfrage (`->whereIn('gallery_id', $allowedGalleryIds)`). Das bläht den GET-Request an Meilisearch unnötig auf und führt ab einigen tausend Galerien zu HTTP 414 URI Too Long Fehlern.
+  * **Lösung:** Scout Query bedingt aufbauen:
+    ```php
+    $query = Photo::search($q);
+    if (!$user->is_admin) {
+        $query->whereIn('gallery_id', $allowedGalleryIds);
+    }
+    $photos = $query->take(100)->get();
+    ```

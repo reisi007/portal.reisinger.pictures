@@ -1,5 +1,5 @@
 import useSWR from 'swr';
-import { fetcher } from '../api';
+import { fetcher, apiMutate } from '../api';
 
 export interface Gallery {
     id: number;
@@ -26,41 +26,45 @@ export interface GalleryTreeResponse {
     root_galleries: Gallery[];
 }
 
+export const flattenGroups = (groups: GalleryGroup[], depth = 0): {id: number, name: string, depth: number}[] => {
+    let flat: {id: number, name: string, depth: number}[] = [];
+    for (const g of groups) {
+        flat.push({ id: g.id, name: g.name, depth });
+        if (g.children) flat = flat.concat(flattenGroups(g.children, depth + 1));
+    }
+    return flat;
+};
+
 export function useAdminGalleries() {
     const { data, error, isLoading, mutate } = useSWR<GalleryTreeResponse>('/api/admin/galleries', fetcher);
 
     const createGroup = async (name: string, parentId?: number | null) => {
-        const token = localStorage.getItem('rp_jwt');
-        const res = await fetch('/api/admin/gallery-groups', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-            body: JSON.stringify({ name, parent_id: parentId })
-        });
-        if (!res.ok) throw new Error('Gruppe konnte nicht erstellt werden.');
-        await mutate();
+        try {
+            await apiMutate('/api/admin/gallery-groups', 'POST', { name, parent_id: parentId });
+            await mutate();
+        } catch (e) {
+            throw new Error('Gruppe konnte nicht erstellt werden.');
+        }
     };
 
     const createGallery = async (name: string, type: 'selection' | 'delivery', isLive: boolean, isPublic: boolean, groupId?: number | null) => {
-        const token = localStorage.getItem('rp_jwt');
-        const res = await fetch('/api/admin/galleries', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-            body: JSON.stringify({ 
+        try {
+            await apiMutate('/api/admin/galleries', 'POST', { 
                 name, type, is_live: isLive, is_public: isPublic, gallery_group_id: groupId
-            })
-        });
-        if (!res.ok) throw new Error('Galerie konnte nicht erstellt werden.');
-        await mutate();
+            });
+            await mutate();
+        } catch (e) {
+            throw new Error('Galerie konnte nicht erstellt werden.');
+        }
     };
 
     const deleteGallery = async (id: number) => {
-        const token = localStorage.getItem('rp_jwt');
-        const res = await fetch(`/api/admin/galleries/${id}`, {
-            method: 'DELETE',
-            headers: { 'Authorization': `Bearer ${token}` }
-        });
-        if (!res.ok) throw new Error('Galerie konnte nicht gelöscht werden.');
-        await mutate();
+        try {
+            await apiMutate(`/api/admin/galleries/${id}`, 'DELETE');
+            await mutate();
+        } catch (e) {
+            throw new Error('Galerie konnte nicht gelöscht werden.');
+        }
     };
 
     return { tree: data, isLoading, isError: error, mutate, createGroup, createGallery, deleteGallery };

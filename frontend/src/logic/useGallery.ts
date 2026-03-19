@@ -66,8 +66,14 @@ export function useGallery(slug: string | undefined) {
         });
 
         if (res.status === 401) {
-            // Falls ein Gast versucht zu bewerten, zur Anmeldung zwingen
-            window.location.href = '/login';
+            const modal = document.getElementById('login_modal') as HTMLDialogElement;
+            if (modal) {
+                modal.showModal();
+            } else {
+                window.location.href = '/login';
+            }
+            mutate(); // Optimistic Update verwerfen
+            return;
         }
         
         mutate(); 

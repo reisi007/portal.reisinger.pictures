@@ -6,5 +6,5 @@ import ClientDashboard from './client/ClientDashboard';
 export default function Dashboard() {
     const { user } = useAuth();
     if (!user) return null;
-    return user.is_admin ? <AdminDashboard /> : <ClientDashboard />;
+    return (user.is_admin || user.is_photographer) ? <AdminDashboard /> : <ClientDashboard />;
 }

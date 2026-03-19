@@ -1,28 +1,15 @@
-import { Photo } from './useGallery';
 import { mutate } from 'swr';
+import { apiMutate } from '../api';
 
 export function usePhoto() {
     const updateMetadata = async (id: number, title: string, description: string, artist?: string) => {
-        const token = localStorage.getItem('rp_jwt');
-        const res = await fetch(`/api/photos/${id}/meta`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-            body: JSON.stringify({ title, description, artist })
-        });
-        if (!res.ok) throw new Error('Fehler beim Speichern der Metadaten.');
-        // Globalen Cache für die Galerie invalidieren (damit Texte im Raster stimmen)
+        const data = await apiMutate<any>(`/api/photos/${id}/meta`, 'PUT', { title, description, artist });
         mutate(key => typeof key === 'string' && key.includes('/api/galleries/'));
-        return res.json();
+        return data;
     };
 
     const deletePhoto = async (id: number) => {
-        const token = localStorage.getItem('rp_jwt');
-        const res = await fetch(`/api/photos/${id}`, {
-            method: 'DELETE',
-            headers: { 'Authorization': `Bearer ${token}` }
-        });
-        if (!res.ok) throw new Error('Fehler beim Löschen des Fotos.');
-        // Globalen Cache für die Galerie invalidieren
+        await apiMutate(`/api/photos/${id}`, 'DELETE');
         mutate(key => typeof key === 'string' && key.includes('/api/galleries/'));
     };
 

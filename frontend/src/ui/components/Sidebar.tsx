@@ -3,6 +3,7 @@ import { GalleryGroup, Gallery, GalleryTreeResponse } from '../../logic/useGalle
 
 interface SidebarProps {
     userEmail: string;
+    isAdmin: boolean;
     tree?: GalleryTreeResponse;
     isLoading: boolean;
     isError: any;
@@ -16,7 +17,7 @@ interface SidebarProps {
     currentView: 'structure' | 'users' | 'settings' | 'stats' | 'mail-templates';
 }
 
-export default function Sidebar({ userEmail, tree, isLoading, isError, onLogout, onOpenGalleryModal, onOpenGroupModal, onDeleteGallery, onGenerateInvite, onSendEmail, onViewChange, currentView }: SidebarProps) {
+export default function Sidebar({ userEmail, isAdmin, tree, isLoading, isError, onLogout, onOpenGalleryModal, onOpenGroupModal, onDeleteGallery, onGenerateInvite, onSendEmail, onViewChange, currentView }: SidebarProps) {
     const renderGroup = (group: GalleryGroup) => (
         <li key={"group-" + group.id}>
             <details open>
@@ -60,19 +61,14 @@ export default function Sidebar({ userEmail, tree, isLoading, isError, onLogout,
                 <li><a className={currentView === 'structure' ? 'active' : ''} onClick={() => onViewChange('structure')}>
                     <span className="iconify mdi--folder-multiple text-lg"></span> Galerie-Struktur
                 </a></li>
-                <li><a className={currentView === 'stats' ? 'active' : ''} onClick={() => onViewChange('stats')}>
-                    <span className="iconify mdi--chart-box text-lg"></span> Statistiken &amp; Logs
-                </a></li>
-                <li><a className={currentView === 'users' ? 'active' : ''} onClick={() => onViewChange('users')}>
-                    <span className="iconify mdi--account-group text-lg"></span> Benutzer &amp; Domains
-                </a></li>
-                <li><a className={currentView === 'mail-templates' ? 'active' : ''} onClick={() => onViewChange('mail-templates')}>
-                    <span className="iconify mdi--email-edit text-lg"></span> E-Mail Vorlagen
-                </a></li>
-                <li><a className={currentView === 'settings' ? 'active' : ''} onClick={() => onViewChange('settings')}>
-                    <span className="iconify mdi--cog text-lg"></span> Einstellungen
-                </a></li>
-            </ul>
+                {isAdmin && (
+                <>
+                    <li><a className={currentView === 'stats' ? 'active' : ''} onClick={() => onViewChange('stats')}>
+                        <span className="iconify mdi--chart-box text-lg"></span> Statistiken &amp; Logs
+                    </a></li>
+                                                                            </>
+            )}
+                                                            </ul>
 
             {currentView === 'structure' && (
                 <div className="p-4 flex gap-2 border-b border-base-300">

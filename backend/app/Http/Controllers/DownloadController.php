@@ -1,14 +1,15 @@
 <?php
 
-namespace AppHttpControllers;
+namespace App\Http\Controllers;
 
-use IlluminateHttpRequest;
-use AppModelsGallery;
-use AppModelsPhoto;
-use AppModelsDownloadLog;
+use Illuminate\Http\Request;
+use App\Models\Gallery;
+use App\Models\Photo;
+use App\Models\DownloadLog;
 use ZipStream\ZipStream;
-use IlluminateSupportFacadesLog;
-use AppServicesWatermarkService;
+use Illuminate\Support\Facades\Log;
+use App\Services\WatermarkService;
+use Symfony\Component\Process\Process;
 
 class DownloadController extends Controller
 {
@@ -17,7 +18,7 @@ class DownloadController extends Controller
         $user = auth('api')->user();
         if (!$gallery->is_public) {
             if (!$user) abort(401, 'Unauthorized access to this gallery.');
-            if (!$user->is_admin && !$user->galleries()->where('galleries.id', $gallery->id)->exists()) {
+            if (!$user->canAccessGallery($gallery->id)) {
                 abort(403, 'Unauthorized access to this gallery.');
             }
         }
@@ -32,31 +33,39 @@ class DownloadController extends Controller
         $tempPath = $tempDir . '/' . uniqid('dl_') . '.jpg';
         copy($sourcePath, $tempPath);
 
-        // Daten aus der Datenbank auslesen
-        $title = escapeshellarg($photo->title ?? '');
-        $desc = escapeshellarg($photo->description ?? '');
-        $artist = escapeshellarg($photo->artist ?? config('app.name', 'Reisinger Portal'));
-        $copyright = escapeshellarg('Copyright ' . date('Y') . ' ' . trim($photo->artist ?? config('app.name', 'Reisinger Portal'), '"\''));
-        $instructions = escapeshellarg('Licensed to / Downloaded by: ' . $userName);
+        $artist = trim($photo->artist ?? config('app.name', 'Reisinger Portal'), '"\''');
+        $copyright = 'Copyright ' . date('Y') . ' ' . $artist;
+        $instructions = 'Licensed to / Downloaded by: ' . $userName;
         
-        // ExifTool schreibt nun Titel, Beschreibung UND Tracking-Info in einem Rutsch
-        $cmd = "exiftool -overwrite_original -q -m -charset utf8 -charset iptc=utf8 -charset exif=utf8 -IPTC:CodedCharacterSet=utf8 ";
+        $args = [
+            'exiftool', '-overwrite_original', '-q', '-m', 
+            '-charset', 'utf8', '-charset', 'iptc=utf8', '-charset', 'exif=utf8', '-IPTC:CodedCharacterSet=utf8'
+        ];
         
         if (!empty($photo->title)) {
-            $cmd .= "-ObjectName={$title} -XPTitle={$title} ";
+            $args[] = "-ObjectName={$photo->title}";
+            $args[] = "-XPTitle={$photo->title}";
         }
         if (!empty($photo->description)) {
-            $cmd .= "-Caption-Abstract={$desc} -ImageDescription={$desc} ";
+            $args[] = "-Caption-Abstract={$photo->description}";
+            $args[] = "-ImageDescription={$photo->description}";
         }
         
-        $cmd .= "-Artist={$artist} -By-line={$artist} -Copyright={$copyright} -CopyrightNotice={$copyright} "
-             . "-SpecialInstructions={$instructions} "
-             . escapeshellarg($tempPath);
+        array_push(
+            $args,
+            "-Artist={$artist}",
+            "-By-line={$artist}",
+            "-Copyright={$copyright}",
+            "-CopyrightNotice={$copyright}",
+            "-SpecialInstructions={$instructions}",
+            $tempPath
+        );
              
-        exec($cmd . ' 2>&1', $output, $returnVar);
+        $process = new Process($args);
+        $process->run();
 
-        if ($returnVar !== 0) {
-            Log::error("ExifTool failed on {$sourcePath}: " . implode("\n", $output));
+        if (!$process->isSuccessful()) {
+            Log::error("ExifTool failed on {$sourcePath}: " . $process->getErrorOutput());
             @unlink($tempPath);
             return $sourcePath; 
         }

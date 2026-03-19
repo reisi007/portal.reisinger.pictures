@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../logic/useAuth';
-import { useAdminGalleries, GalleryGroup } from '../../logic/useGalleries';
+import { useAdminGalleries, flattenGroups } from '../../logic/useGalleries';
 import { useSearch } from '../../logic/useSearch';
 import Sidebar from '../components/Sidebar';
 import GalleryModals from '../components/GalleryModals';
@@ -10,6 +10,7 @@ import AdminSettingsView from './AdminSettingsView';
 import AdminFtpInbox from './AdminFtpInbox';
 import AdminStatsView from './AdminStatsView';
 import AdminMailTemplatesView from './AdminMailTemplatesView';
+import InviteModal from './components/InviteModal';
 
 export default function AdminDashboard() {
     const { user, logout } = useAuth();
@@ -20,23 +21,15 @@ export default function AdminDashboard() {
     
     const [isGroupModalOpen, setGroupModalOpen] = useState(false);
     const [isGalleryModalOpen, setGalleryModalOpen] = useState(false);
+    const [inviteGalleryId, setInviteGalleryId] = useState<number | null>(null);
     const [currentView, setCurrentView] = useState<'structure' | 'users' | 'settings' | 'stats' | 'mail-templates'>('structure');
-
-    const flattenGroups = (groups: GalleryGroup[], depth = 0): {id: number, name: string, depth: number}[] => {
-        let flat: {id: number, name: string, depth: number}[] = [];
-        for (const g of groups) {
-            flat.push({ id: g.id, name: g.name, depth });
-            if (g.children) flat = flat.concat(flattenGroups(g.children, depth + 1));
-        }
-        return flat;
-    };
 
     return (
         <div className="flex h-screen bg-base-100">
             <Sidebar 
-                userEmail={user!.email} tree={tree} isLoading={isLoading} isError={isError} onLogout={logout} 
+                userEmail={user!.email} isAdmin={user!.is_admin} tree={tree} isLoading={isLoading} isError={isError} onLogout={logout} 
                 onOpenGalleryModal={() => setGalleryModalOpen(true)} onOpenGroupModal={() => setGroupModalOpen(true)}
-                onDeleteGallery={deleteGallery} onGenerateInvite={() => {}} onSendEmail={() => {}}
+                onDeleteGallery={deleteGallery} onGenerateInvite={setInviteGalleryId} onSendEmail={() => {}}
                 onViewChange={setCurrentView} currentView={currentView}
             />
             <main className="flex-1 overflow-y-auto flex flex-col">
@@ -72,6 +65,9 @@ export default function AdminDashboard() {
                 isGalleryModalOpen={isGalleryModalOpen} setGalleryModalOpen={setGalleryModalOpen}
                 onCreateGroup={createGroup} onCreateGallery={createGallery}
             />
+            {inviteGalleryId !== null && (
+                <InviteModal galleryId={inviteGalleryId} onClose={() => setInviteGalleryId(null)} />
+            )}
         </div>
     );
 }

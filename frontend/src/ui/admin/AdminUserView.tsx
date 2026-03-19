@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useUsers, UserDetailed } from '../../logic/useUsers';
-import { useAdminGalleries } from '../../logic/useGalleries';
+import { useAdminGalleries, flattenGroups } from '../../logic/useGalleries';
 import DomainMappingTab from './components/DomainMappingTab';
 import UserPermissionsModal from './components/UserPermissionsModal';
 
@@ -9,15 +9,6 @@ export default function AdminUserView() {
     const { tree } = useAdminGalleries();
     const [activeTab, setActiveTab] = useState<'users' | 'mappings'>('users');
     const [editingUser, setEditingUser] = useState<UserDetailed | null>(null);
-
-    const flattenGroups = (groups: any[], depth = 0): any[] => {
-        let flat: any[] = [];
-        for (const g of groups) {
-            flat.push({ id: g.id, name: g.name, depth });
-            if (g.children) flat = flat.concat(flattenGroups(g.children, depth + 1));
-        }
-        return flat;
-    };
 
     const flatGroups = tree ? flattenGroups(tree.groups) : [];
     const flatGalleries = tree ? [...(tree.groups.flatMap(g => g.galleries || [])), ...(tree.root_galleries || [])] : [];

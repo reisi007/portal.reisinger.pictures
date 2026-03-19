@@ -1,12 +1,12 @@
 <?php
 
-namespace AppHttpControllers;
+namespace App\Http\Controllers;
 
-use IlluminateHttpRequest;
-use AppModelsGallery;
-use AppModelsPhoto;
-use IlluminateSupportFacadesLog;
-use IlluminateSupportStr;
+use Illuminate\Http\Request;
+use App\Models\Gallery;
+use App\Models\Photo;
+use Illuminate\Support\Str;
+use App\Services\PhotoProcessingService;
 
 class ImageController extends Controller
 {
@@ -22,6 +22,11 @@ class ImageController extends Controller
         if (!$gallery) return response()->json(['error' => 'Galerie nicht gefunden'], 404);
 
         $user = auth('api')->user();
+        
+        if (!$user->canAccessGallery($gallery->id)) {
+            return response()->json(['error' => 'Keine Berechtigung für diese Galerie.'], 403);
+        }
+
         $file = $request->file('file');
         
         $originalName = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
@@ -41,49 +46,14 @@ class ImageController extends Controller
             return response()->json(['error' => 'Datei konnte nicht gespeichert werden.'], 500);
         }
 
-        // Metadaten AUSLESEN (statt schreiben)
-        $cmd = "exiftool -json -Title -ObjectName -XPTitle -ImageDescription -Caption-Abstract -Artist -By-line -Copyright " . escapeshellarg($targetPath);
-        $metaOutput = shell_exec($cmd);
-        $metaData = json_decode($metaOutput, true);
-        
-        $title = null; $desc = null; $artist = $user->metadata_copyright ?: $user->name;
-        if (is_array($metaData) && isset($metaData[0])) {
-            $m = $metaData[0];
-            $title = $m['Title'] ?? $m['ObjectName'] ?? $m['XPTitle'] ?? null;
-            $desc = $m['ImageDescription'] ?? $m['Caption-Abstract'] ?? null;
-            // Wenn das Bild schon einen Autor hat, behalten wir diesen, sonst Fallback auf den uploader
-            $artist = $m['Artist'] ?? $m['By-line'] ?? $m['Copyright'] ?? $artist;
-        }
-
-        $size = @getimagesize($targetPath);
-        $width = $size ? (int) $size[0] : 0;
-        $height = $size ? (int) $size[1] : 0;
-
         $thumbPath = $thumbsDir . '/' . md5($filename . '1024') . '.webp';
-
-        try {
-            $im = new \Imagick($targetPath);
-            $im->autoOrient();
-            if ($width > 1024) $im->thumbnailImage(1024, 0, false);
-            $im->setImageFormat('webp');
-            $im->setImageCompressionQuality(80);
-            $im->writeImage($thumbPath);
-            $im->clear();
-            $im->destroy();
-        } catch (\Exception $e) {
-            Log::error("Imagick Error on Upload: " . $e->getMessage());
-        }
+        
+        $photoService = app(PhotoProcessingService::class);
+        $meta = $photoService->processImage($targetPath, $thumbPath, $user->metadata_copyright ?: $user->name);
 
         $photo = Photo::updateOrCreate(
             ['gallery_id' => $gallery->id, 'lr_uuid' => $request->lr_uuid],
-            [
-                'filename' => $filename, 
-                'width' => $width, 
-                'height' => $height, 
-                'title' => $title, 
-                'description' => $desc, 
-                'artist' => $artist
-            ]
+            array_merge(['filename' => $filename], $meta)
         );
 
         return response()->json(['success' => true, 'photo_id' => $photo->id, 'filename' => $filename]);

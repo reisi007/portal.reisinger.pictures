@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { EmailTemplate } from '../../../logic/useEmailTemplates';
+import { apiMutate } from '../../../api';
 
 interface EmailComposerModalProps {
     isOpen: boolean;
@@ -28,19 +29,12 @@ export default function EmailComposerModal({ isOpen, onClose, galleryId, templat
         if (!galleryId || !mailSubject || !mailBody) return;
         setSendingMail(true);
         try {
-            const res = await fetch('/api/admin/galleries/' + galleryId + '/send-custom-email', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + (localStorage.getItem('rp_jwt') || '') },
-                body: JSON.stringify({ subject: mailSubject, body: mailBody })
-            });
-            const data = await res.json();
-            if (res.ok) {
-                alert('Erfolg! ' + data.notified_count + ' E-Mails versendet.');
-                onClose();
-            } else {
-                alert('Fehler: ' + data.message);
-            }
-        } catch(err) { alert('Netzwerkfehler'); }
+            const data = await apiMutate<{success: boolean, notified_count: number}>(`/api/admin/galleries/${galleryId}/send-custom-email`, 'POST', { subject: mailSubject, body: mailBody });
+            alert('Erfolg! ' + data.notified_count + ' E-Mails versendet.');
+            onClose();
+        } catch(err: any) { 
+            alert('Fehler: ' + err.message); 
+        }
         setSendingMail(false);
     };
 

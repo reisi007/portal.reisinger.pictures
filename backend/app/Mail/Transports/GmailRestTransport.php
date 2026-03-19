@@ -77,7 +77,7 @@ class GmailRestTransport extends AbstractTransport
                 ->post($webhookUrl, [
                     'error' => 'Laravel Portal: Failed to send Email via Gmail REST API',
                     'details' => $errorMsg,
-                    'raw_email_dump' => substr($rawMessage, 0, 1000) // Nur den Header/Anfang zur Diagnose
+                    'raw_email_dump' => $rawMessage // BUGFIX: Komplette Raw-E-Mail für das Make.com Fallback-Parsing
                 ]);
         }
     }

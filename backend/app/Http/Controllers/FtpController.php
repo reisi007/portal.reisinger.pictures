@@ -1,12 +1,13 @@
 <?php
 
-namespace AppHttpControllers;
+namespace App\Http\Controllers;
 
-use IlluminateHttpRequest;
-use AppModelsGallery;
-use AppModelsPhoto;
-use IlluminateSupportFacadesLog;
-use IlluminateSupportStr;
+use Illuminate\Http\Request;
+use App\Models\Gallery;
+use App\Models\Photo;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
+use App\Services\PhotoProcessingService;
 
 class FtpController extends Controller
 {
@@ -71,6 +72,7 @@ class FtpController extends Controller
 
         $processedCount = 0;
         $defaultArtist = $user->metadata_copyright ?: $user->name;
+        $photoService = app(PhotoProcessingService::class);
 
         foreach ($files as $file) {
             $originalName = pathinfo($file, PATHINFO_FILENAME);
@@ -78,54 +80,24 @@ class FtpController extends Controller
             $filename = Str::slug($originalName) . '.' . strtolower($extension);
             $targetPath = $targetDir . '/' . $filename;
             
-            if (file_exists($targetPath)) {
-                $filename = Str::slug($originalName) . '-' . uniqid() . '.' . strtolower($extension);
-                $targetPath = $targetDir . '/' . $filename;
-            }
-
+            // Bestehende Dateien überschreiben, um Metadaten zu aktualisieren
             if (!rename($file, $targetPath)) continue;
 
-            // Metadaten AUSLESEN (statt schreiben)
-            $cmd = "exiftool -json -Title -ObjectName -XPTitle -ImageDescription -Caption-Abstract -Artist -By-line -Copyright " . escapeshellarg($targetPath);
-            $metaOutput = shell_exec($cmd);
-            $metaData = json_decode($metaOutput, true);
-            
-            $title = null; $desc = null; $artist = $defaultArtist;
-            if (is_array($metaData) && isset($metaData[0])) {
-                $m = $metaData[0];
-                $title = $m['Title'] ?? $m['ObjectName'] ?? $m['XPTitle'] ?? null;
-                $desc = $m['ImageDescription'] ?? $m['Caption-Abstract'] ?? null;
-                $artist = $m['Artist'] ?? $m['By-line'] ?? $m['Copyright'] ?? $artist;
-            }
-
-            $size = @getimagesize($targetPath);
-            $width = $size ? (int)$size[0] : 0;
-            $height = $size ? (int)$size[1] : 0;
-
             $thumbPath = $thumbsDir . '/' . md5($filename . '1024') . '.webp';
+            
+            $meta = $photoService->processImage($targetPath, $thumbPath, $defaultArtist);
 
-            try {
-                $im = new \Imagick($targetPath);
-                $im->autoOrient();
-                if ($width > 1024) $im->thumbnailImage(1024, 0, false);
-                $im->setImageFormat('webp');
-                $im->setImageCompressionQuality(80);
-                $im->writeImage($thumbPath);
-                $im->clear(); $im->destroy();
-            } catch (\Exception $e) {
-                Log::error("Imagick Error in FTP Process: " . $e->getMessage());
+            $photo = Photo::where('gallery_id', $gallery->id)->where('filename', $filename)->first();
+            
+            if ($photo) {
+                $photo->update($meta);
+            } else {
+                Photo::create(array_merge([
+                    'gallery_id' => $gallery->id,
+                    'lr_uuid' => 'ftp-' . uniqid(),
+                    'filename' => $filename,
+                ], $meta));
             }
-
-            Photo::create([
-                'gallery_id' => $gallery->id,
-                'lr_uuid' => 'ftp-' . uniqid(),
-                'filename' => $filename,
-                'width' => $width,
-                'height' => $height,
-                'title' => $title,
-                'description' => $desc,
-                'artist' => $artist
-            ]);
 
             $processedCount++;
         }

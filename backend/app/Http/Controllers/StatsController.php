@@ -1,14 +1,29 @@
 <?php
 
-namespace AppHttpControllers;
+namespace App\Http\Controllers;
 
-use AppModelsGallery;
-use AppModelsDownloadLog;
-use IlluminateHttpRequest;
-use IlluminateSupportFacadesDB;
+use App\Models\Gallery;
+use App\Models\DownloadLog;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class StatsController extends Controller
 {
+    private function processDomainStats($rawDomainStats)
+    {
+        $mapped = [];
+        foreach ($rawDomainStats as $stat) {
+            $domain = $stat->domain === 'invite.local' ? 'Benannte Invite Links' : $stat->domain;
+            if (!isset($mapped[$domain])) {
+                $mapped[$domain] = ['domain' => $domain, 'count' => 0];
+            }
+            $mapped[$domain]['count'] += $stat->count;
+        }
+        $domainStats = array_values($mapped);
+        usort($domainStats, function($a, $b) { return $b['count'] <=> $a['count']; });
+        return array_slice($domainStats, 0, 10);
+    }
+
     public function index()
     {
         $user = auth('api')->user();
@@ -21,27 +36,27 @@ class StatsController extends Controller
             $totalDownloads = DownloadLog::whereIn('gallery_id', $galleryIds)->count();
             $guestDownloads = DownloadLog::whereIn('gallery_id', $galleryIds)->whereNull('user_id')->count();
             
-            $domainStats = DB::table('download_logs')
+            $rawDomainStats = DB::table('download_logs')
                 ->join('users', 'download_logs.user_id', '=', 'users.id')
                 ->whereIn('download_logs.gallery_id', $galleryIds)
                 ->selectRaw('SUBSTRING_INDEX(users.email, "@", -1) as domain, COUNT(*) as count')
                 ->groupBy('domain')
-                ->orderByDesc('count')
-                ->limit(10)
                 ->get();
+                
+            $domainStats = $this->processDomainStats($rawDomainStats);
         } else {
             // Admins sehen alles
             $galleriesCount = Gallery::count();
             $totalDownloads = DownloadLog::count();
             $guestDownloads = DownloadLog::whereNull('user_id')->count();
             
-            $domainStats = DB::table('download_logs')
+            $rawDomainStats = DB::table('download_logs')
                 ->join('users', 'download_logs.user_id', '=', 'users.id')
                 ->selectRaw('SUBSTRING_INDEX(users.email, "@", -1) as domain, COUNT(*) as count')
                 ->groupBy('domain')
-                ->orderByDesc('count')
-                ->limit(10)
                 ->get();
+                
+            $domainStats = $this->processDomainStats($rawDomainStats);
         }
 
         return response()->json([
