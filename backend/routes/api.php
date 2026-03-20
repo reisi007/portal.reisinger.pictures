@@ -17,6 +17,7 @@ use App\Http\Controllers\FtpController;
 use App\Http\Controllers\PhotoController;
 use App\Http\Controllers\StatsController;
 use App\Http\Controllers\EmailTemplateController;
+use App\Http\Controllers\FileDeliveryController;
 
 Route::middleware('throttle:10,1')->group(function () {
     Route::post('/auth/login', [AuthController::class, 'login']);
@@ -34,6 +35,7 @@ Route::middleware('throttle:10,1')->post('/invites/redeem', [InviteController::c
 Route::get('/search', [SearchController::class, 'search']);
 Route::get('/photos/{id}/context', [SearchController::class, 'photoContext']);
 Route::get('/galleries/{slug}', [GalleryFrontendController::class, 'show']);
+Route::get('/media/{slug}/{filename}', [FileDeliveryController::class, 'serve'])->where('filename', '.*');
 
 Route::get('/photos/{photoId}/download', [DownloadController::class, 'downloadSingle']);
 Route::get('/galleries/{galleryId}/download-zip', [DownloadController::class, 'downloadZip']);

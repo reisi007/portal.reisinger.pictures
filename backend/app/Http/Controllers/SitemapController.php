@@ -46,7 +46,7 @@ class SitemapController extends Controller
         
         foreach ($photos as $photo) {
             $pageUrl = $baseUrl . '/photos/' . $photo->id;
-            $imageUrl = $baseUrl . '/media/' . $photo->gallery->slug . '/' . $photo->filename;
+            $imageUrl = $baseUrl . '/api/media/' . $photo->gallery->slug . '/' . $photo->filename;
             
             $xml .= '  <url>' . "\n";
             $xml .= '    <loc>' . $pageUrl . '</loc>' . "\n";

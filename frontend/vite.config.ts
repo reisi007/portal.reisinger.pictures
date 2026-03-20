@@ -8,16 +8,9 @@ export default defineConfig({
     port: 4321,
     proxy: {
       '/api': {
-        target: 'https://portal.test', 
+        target: 'https://portal.test', // Deine lokale Herd-Domain
         changeOrigin: true,
-        secure: false, // Wichtig: Akzeptiert das lokale, selbstsignierte Zertifikat von Herd
-      },
-      // Wir müssen lokal auch die Fotos über Herd proxyen, 
-      // damit im React-Dev-Server keine CORS-Fehler auftreten.
-      '/photos': {
-        target: 'https://portal.test', 
-        changeOrigin: true,
-        secure: false,
+        secure: false, // Wichtig für lokale Zertifikate
       }
     }
   }
