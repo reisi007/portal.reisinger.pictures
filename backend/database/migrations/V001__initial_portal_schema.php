@@ -61,6 +61,13 @@ return new class extends Migration {
             $table->timestamp('created_at')->useCurrent();
         });
 
+        // --- Password Reset Tokens ---
+        Schema::create('password_reset_tokens', function (Blueprint $table) {
+            $table->string('email')->primary();
+            $table->string('token');
+            $table->timestamp('created_at')->nullable();
+        });
+
         Schema::create('roles', function (Blueprint $table) {
             $table->id();
             $table->string('name', 50)->unique();
@@ -197,6 +204,7 @@ return new class extends Migration {
         Schema::dropIfExists('gallery_groups');
         Schema::dropIfExists('user_roles');
         Schema::dropIfExists('roles');
+        Schema::dropIfExists('password_reset_tokens');
         Schema::dropIfExists('users');
     }
 };

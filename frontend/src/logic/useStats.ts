@@ -24,8 +24,8 @@ export interface PaginatedLogs {
 }
 
 export function useStats(page = 1) {
-    const { data: stats, isLoading: statsLoading } = useSWR<StatsData>('/api/admin/stats', fetcher);
-    const { data: logs, isLoading: logsLoading } = useSWR<PaginatedLogs>(`/api/admin/logs?page=${page}`, fetcher);
+    const { data: stats, isLoading: statsLoading } = useSWR<StatsData>('/api/management/stats', fetcher);
+    const { data: logs, isLoading: logsLoading } = useSWR<PaginatedLogs>(`/api/management/logs?page=${page}`, fetcher);
 
     return { stats, logs, isLoading: statsLoading || logsLoading };
 }

@@ -15,22 +15,6 @@ services:
     networks:
       - webnet
 
-  flyway:
-    image: flyway/flyway:10-alpine
-    container_name: portal_flyway
-    depends_on:
-      db:
-        condition: service_started
-    environment:
-      FLYWAY_URL: jdbc:mariadb://db:3306/portal_db
-      FLYWAY_USER: portal_user
-      FLYWAY_PASSWORD: ${DB_PASSWORD}
-    volumes:
-      - /home/webadmin/websites/portal.reisinger.pictures/flyway/migrations:/flyway/sql:Z
-    command: -connectRetries=60 migrate
-    networks:
-      - webnet
-
   search:
     image: getmeili/meilisearch:v1.6
     container_name: portal_search
@@ -43,10 +27,12 @@ services:
     networks:
       - webnet
 
-  # Init-Container nutzt nun das Image mit MariaDB PDO Support
   backend-init:
     image: ghcr.io/reisi007/php-apache-mod2rewrite-imagick-exiftool-maria-pdo:8.5
     container_name: portal_backend_init
+    depends_on:
+      db:
+        condition: service_started
     volumes:
       - /home/webadmin/websites/portal.reisinger.pictures/backend:/var/www/html:Z
     command: >
@@ -54,19 +40,17 @@ services:
       if [ ! -f .env ]; then cp .env.example .env; fi;
       if grep -q '^APP_KEY=$' .env; then php artisan key:generate --force --no-interaction; fi;
       if grep -q '^JWT_SECRET=$' .env; then php artisan jwt:secret --force --no-interaction; fi;
+      php artisan migrate --force;
       echo 'Laravel Initialization complete.';
       "
     networks:
       - webnet
 
-  # Backend nutzt nun das Image mit MariaDB PDO Support
   backend:
     image: ghcr.io/reisi007/php-apache-mod2rewrite-imagick-exiftool-maria-pdo:8.5
     container_name: portal_backend
     restart: unless-stopped
     depends_on:
-      flyway:
-        condition: service_completed_successfully
       backend-init:
         condition: service_completed_successfully
       search:
@@ -93,7 +77,6 @@ services:
     networks:
       - webnet
 
-  # NEU: Frontend Container
   frontend:
     image: nginx:alpine
     container_name: portal_frontend
@@ -102,9 +85,7 @@ services:
       backend:
         condition: service_started
     volumes:
-      # Mountet die lokal gebaute React-App (npm run build)
       - /home/webadmin/websites/portal.reisinger.pictures/frontend/dist:/usr/share/nginx/html:ro
-      # Mountet die Nginx Konfiguration für SPA Routing
       - /home/webadmin/websites/portal.reisinger.pictures/frontend/nginx.conf:/etc/nginx/conf.d/default.conf:ro
     networks:
       - webnet

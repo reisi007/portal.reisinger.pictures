@@ -20,12 +20,15 @@ class GalleryController extends Controller
         $tree = Cache::rememberForever('gallery_tree_admin', function () {
             $groups = GalleryGroup::whereNull('parent_id')->with(['children', 'galleries'])->get();
             $rootGalleries = Gallery::whereNull('gallery_group_id')->get();
-            return ['groups' => $groups, 'root_galleries' => $rootGalleries];
+            // WICHTIG: Zu Arrays konvertieren, um __PHP_Incomplete_Class_Name beim Deserialisieren zu verhindern
+            return [
+                'groups' => $groups->toArray(), 
+                'root_galleries' => $rootGalleries->toArray()
+            ];
         });
 
         $filterType = $request->query('filter_type');
-        if ($filterType) {
-            $treeArray = json_decode(json_encode($tree), true);
+        $treeArray = json_decode(json_encode($tree), true);
 
         if (!$user->is_admin && $user->is_photographer) {
             $allowedGalleryIds = $user->galleries()->pluck('galleries.id')->toArray();
@@ -48,6 +51,7 @@ class GalleryController extends Controller
             $treeArray['root_galleries'] = array_values(array_filter($treeArray['root_galleries'], fn($g) => in_array($g['id'], $allowedGalleryIds)));
         }
 
+        if ($filterType) {
             $filterNode = function($groups) use (&$filterNode, $filterType) {
                 $result = [];
                 foreach ($groups as $group) {
@@ -68,11 +72,9 @@ class GalleryController extends Controller
             $treeArray['root_galleries'] = array_values(array_filter($treeArray['root_galleries'], function($g) use ($filterType) {
                 return $g['type'] === $filterType;
             }));
-
-            return response()->json($treeArray);
         }
 
-        return response()->json($tree);
+        return response()->json($treeArray);
     }
 
     public function storeGroup(Request $request)
@@ -90,6 +92,11 @@ class GalleryController extends Controller
 
     public function storeGallery(Request $request)
     {
+        $user = auth('api')->user();
+        if (!$user || !$user->is_photographer) {
+            return response()->json(['error' => 'Nur Fotografen dürfen Galerien erstellen.'], 403);
+        }
+
         $request->validate([
             'name' => 'required|string|max:255',
             'type' => 'nullable|in:selection,delivery',
@@ -108,7 +115,6 @@ class GalleryController extends Controller
             'gallery_group_id' => $request->gallery_group_id,
         ]);
 
-        $user = auth('api')->user();
         if ($user && !$user->is_admin && $user->is_photographer) {
             $user->galleries()->syncWithoutDetaching([$gallery->id]);
         }

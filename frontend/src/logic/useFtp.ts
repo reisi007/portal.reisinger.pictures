@@ -12,15 +12,15 @@ export interface FtpStatus {
 }
 
 export function useFtp() {
-    const { data: status, mutate, isLoading } = useSWR<FtpStatus>('/api/admin/ftp/status', fetcher);
+    const { data: status, mutate, isLoading } = useSWR<FtpStatus>('/api/management/ftp/status', fetcher);
 
     const setTargetGallery = async (gallery_id: number | null) => {
-        await apiMutate('/api/admin/ftp/target', 'POST', { gallery_id });
+        await apiMutate('/api/management/ftp/target', 'POST', { gallery_id });
         mutate();
     };
 
     const processInbox = async () => {
-        const data = await apiMutate<any>('/api/admin/ftp/process', 'POST');
+        const data = await apiMutate<any>('/api/management/ftp/process', 'POST');
         mutate();
         return data;
     };

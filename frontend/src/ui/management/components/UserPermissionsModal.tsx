@@ -38,7 +38,10 @@ export default function UserPermissionsModal({ user, roles, flatGroups, flatGall
     return (
         <div className="modal modal-open">
             <div className="modal-box max-w-4xl">
-                <h3 className="font-bold text-xl mb-4">{user.name} bearbeiten</h3>
+                <h3 className="font-bold text-2xl mb-1">{user.name} bearbeiten</h3>
+                <p className="opacity-70 text-sm mb-6 flex items-center gap-2">
+                    <span className="iconify mdi--email-outline"></span> {user.email}
+                </p>
                 
                 <div className="form-control mb-6 bg-base-200 p-4 rounded-box">
                     <label className="cursor-pointer label justify-start gap-4">
@@ -50,7 +53,7 @@ export default function UserPermissionsModal({ user, roles, flatGroups, flatGall
                     </label>
                 </div>
 
-                <div className="grid grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     <div className="border border-base-300 rounded-box p-4 h-64 overflow-y-auto">
                         <h4 className="font-bold mb-2 sticky top-0 bg-base-100">Rollen</h4>
                         {roles?.map(r => (

@@ -18,7 +18,10 @@ class FileDeliveryController extends Controller
             if (!$user->canAccessGallery($gallery->id)) abort(403, 'Forbidden');
         }
 
-        $isGuest = !$user;
+        $needsWatermark = true;
+        if ($user && ($user->is_admin || $user->canAccessGallery($gallery->id))) {
+            $needsWatermark = false;
+        }
         $cleanFilename = basename($filename);
         $baseStoragePath = env('PHOTO_STORAGE_PATH', base_path('../photos'));
         $watermarkService = app(WatermarkService::class);
@@ -28,7 +31,7 @@ class FileDeliveryController extends Controller
             $path = $sourcePath;
             $xAccelPath = '/protected-photos/' . $gallery->id . '/_thumbs/' . $cleanFilename;
             
-            if ($isGuest) {
+            if ($needsWatermark) {
                 $path = $baseStoragePath . '/' . $gallery->id . '/_thumbs/_watermarked/' . $cleanFilename;
                 $xAccelPath = '/protected-photos/' . $gallery->id . '/_thumbs/_watermarked/' . $cleanFilename;
                 if (!file_exists($path) && file_exists($sourcePath)) {
@@ -41,7 +44,7 @@ class FileDeliveryController extends Controller
             $path = $sourcePath;
             $xAccelPath = '/protected-photos/' . $gallery->id . '/' . $cleanFilename;
 
-            if ($isGuest) {
+            if ($needsWatermark) {
                 $path = $baseStoragePath . '/' . $gallery->id . '/_watermarked/' . $cleanFilename;
                 $xAccelPath = '/protected-photos/' . $gallery->id . '/_watermarked/' . $cleanFilename;
                 if (!file_exists($path) && file_exists($sourcePath)) {

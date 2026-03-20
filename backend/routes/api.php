@@ -21,6 +21,7 @@ use App\Http\Controllers\EmailTemplateController;
 Route::middleware('throttle:10,1')->group(function () {
     Route::post('/auth/login', [AuthController::class, 'login']);
     Route::post('/auth/register', [AuthController::class, 'register']);
+    Route::post('/auth/reset-password', [AuthController::class, 'resetPassword']);
 });
 Route::get('/ping', function() { return response()->json(['message' => 'API OK']); });
 
@@ -47,39 +48,40 @@ Route::middleware('auth:api')->group(function () {
     Route::delete('/photos/{id}', [PhotoController::class, 'destroy']);
 });
 
-Route::middleware(['auth:api', 'admin'])->group(function () {
-    Route::get('/admin/galleries', [GalleryController::class, 'indexAdmin']);
-    Route::post('/admin/gallery-groups', [GalleryController::class, 'storeGroup']);
-    Route::post('/admin/galleries', [GalleryController::class, 'storeGallery']);
-    Route::put('/admin/galleries/{id}', [GalleryController::class, 'updateGallery']); // NEU
-    Route::delete('/admin/galleries/{id}', [GalleryController::class, 'destroyGallery']);
-    Route::get('/admin/galleries/{id}/export', [GalleryController::class, 'exportRatings']);
+Route::middleware(['auth:api', 'management'])->group(function () {
+    Route::get('/management/galleries', [GalleryController::class, 'indexAdmin']);
+    Route::post('/management/gallery-groups', [GalleryController::class, 'storeGroup']);
+    Route::post('/management/galleries', [GalleryController::class, 'storeGallery']);
+    Route::put('/management/galleries/{id}', [GalleryController::class, 'updateGallery']);
+    Route::delete('/management/galleries/{id}', [GalleryController::class, 'destroyGallery']);
+    Route::get('/management/galleries/{id}/export', [GalleryController::class, 'exportRatings']);
     
-    Route::post('/admin/galleries/{id}/invites', [InviteController::class, 'generate']);
-    Route::post('/admin/galleries/{id}/invites/send', [InviteController::class, 'sendEmail']);
-    Route::post('/admin/upload', [ImageController::class, 'upload']);
-    Route::post('/admin/galleries/{id}/send-custom-email', [MailController::class, 'sendCustom']);
+    Route::post('/management/galleries/{id}/invites', [InviteController::class, 'generate']);
+    Route::post('/management/galleries/{id}/invites/send', [InviteController::class, 'sendEmail']);
+    Route::post('/management/upload', [ImageController::class, 'upload']);
+    Route::post('/management/galleries/{id}/send-custom-email', [MailController::class, 'sendCustom']);
 
-    Route::get('/admin/roles', [UserController::class, 'roles']);
-    Route::get('/admin/users', [UserController::class, 'index']);
-    Route::put('/admin/users/{id}', [UserController::class, 'update']);
+    Route::get('/management/roles', [UserController::class, 'roles']);
+    Route::get('/management/users', [UserController::class, 'index']);
+    Route::post('/management/users', [UserController::class, 'store']);
+    Route::put('/management/users/{id}', [UserController::class, 'update']);
     
-    Route::get('/admin/domain-mappings', [DomainMappingController::class, 'index']);
-    Route::post('/admin/domain-mappings', [DomainMappingController::class, 'store']);
-    Route::delete('/admin/domain-mappings/{id}', [DomainMappingController::class, 'destroy']);
+    Route::get('/management/domain-mappings', [DomainMappingController::class, 'index']);
+    Route::post('/management/domain-mappings', [DomainMappingController::class, 'store']);
+    Route::delete('/management/domain-mappings/{id}', [DomainMappingController::class, 'destroy']);
 
-    Route::get('/admin/settings/watermark', [SettingsController::class, 'getWatermark']);
-    Route::post('/admin/settings/watermark', [SettingsController::class, 'updateWatermark']);
+    Route::get('/management/settings/watermark', [SettingsController::class, 'getWatermark']);
+    Route::post('/management/settings/watermark', [SettingsController::class, 'updateWatermark']);
 
-    Route::get('/admin/ftp/status', [FtpController::class, 'status']);
-    Route::post('/admin/ftp/target', [FtpController::class, 'setTarget']);
-    Route::post('/admin/ftp/process', [FtpController::class, 'process']);
+    Route::get('/management/ftp/status', [FtpController::class, 'status']);
+    Route::post('/management/ftp/target', [FtpController::class, 'setTarget']);
+    Route::post('/management/ftp/process', [FtpController::class, 'process']);
 
-    Route::get('/admin/stats', [StatsController::class, 'index']);
-    Route::get('/admin/logs', [StatsController::class, 'logs']);
+    Route::get('/management/stats', [StatsController::class, 'index']);
+    Route::get('/management/logs', [StatsController::class, 'logs']);
 
-    Route::get('/admin/email-templates', [EmailTemplateController::class, 'index']);
-    Route::post('/admin/email-templates', [EmailTemplateController::class, 'store']);
-    Route::put('/admin/email-templates/{id}', [EmailTemplateController::class, 'update']);
-    Route::delete('/admin/email-templates/{id}', [EmailTemplateController::class, 'destroy']);
+    Route::get('/management/email-templates', [EmailTemplateController::class, 'index']);
+    Route::post('/management/email-templates', [EmailTemplateController::class, 'store']);
+    Route::put('/management/email-templates/{id}', [EmailTemplateController::class, 'update']);
+    Route::delete('/management/email-templates/{id}', [EmailTemplateController::class, 'destroy']);
 });

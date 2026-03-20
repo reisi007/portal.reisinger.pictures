@@ -14,3 +14,8 @@ The system strictly separates the selection phase (client rating) from the deliv
 * **Immutable Logs:** Denormalized snapshots (`gallery_name_snapshot`) and `ON DELETE SET NULL` ensure immutable audit trails in `download_logs`. 
 * **No IP Tracking:** IP tracking is strictly disabled to comply with GDPR.
 * **Leak Tracing (ExifTool):** During the delivery workflow, the `DownloadController` uses ExifTool to dynamically inject the downloader's name (e.g., "Downloaded by: Maria Muster") into the `SpecialInstructions` IPTC field of the JPEG. This allows tracing leaked images back to the exact client session without relying on visible watermarks.
+
+## 4. URL-Driven State & Progressive Role Enhancement
+* **Path-Based Routing:** The state of the frontend (active views like users, settings, stats) is driven strictly by React Router paths (e.g., `/users`, `/settings`).
+* **Strict Role Separation:** Roles do not overlap. `admin` rights do NOT imply `photographer` rights. A system administrator who also uploads photos MUST have both roles explicitly assigned.
+* **Role Upgrading:** We avoid role-specific routes. An admin visiting `/galleries/wedding-2026` gets the management UI injected, while a client visiting the exact same URL gets the download/rating UI. The view "upgrades" based on the JWT claims.

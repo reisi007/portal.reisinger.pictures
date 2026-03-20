@@ -9,7 +9,7 @@ export default function InviteModal({ galleryId, onClose }: { galleryId: number,
     const handleGenerate = async () => {
         setLoading(true);
         try {
-            const data = await apiMutate<{success: boolean, link: string}>(`/api/admin/galleries/${galleryId}/invites`, 'POST', { name });
+            const data = await apiMutate<{success: boolean, link: string}>(`/api/management/galleries/${galleryId}/invites`, 'POST', { name });
             if (data.success) {
                 setLink(data.link);
             } else {

@@ -3,9 +3,10 @@
 Dieses Projekt wird via **Portainer** als Docker-Stack bereitgestellt.
 
 ## 1. Automatisierte Initialisierung
-Der Stack nutzt eine Abhängigkeitskette (DB -> Flyway -> Backend-Init -> Backend), um einen fehlerfreien Kaltstart zu garantieren. 
+Der Stack nutzt eine Abhängigkeitskette (DB -> Backend-Init -> Backend), um einen fehlerfreien Kaltstart zu garantieren. 
+Flyway wurde vollständig entfernt. Alle Datenbank-Migrationen laufen nativ über Laravel Migrations.
 
-**Wichtig:** Der Container `backend-init` generiert beim ersten Start vollautomatisch den `APP_KEY` und das `JWT_SECRET`, sofern diese in der `.env` leer sind. Es ist kein manueller Eingriff via Konsole nötig.
+**Wichtig:** Der Container `backend-init` führt beim Start automatisch `php artisan migrate --force` aus und generiert den `APP_KEY` und das `JWT_SECRET`, sofern diese in der `.env` leer sind. Es ist kein manueller Eingriff via Konsole nötig.
 
 ## 2. Portainer Umgebungsvariablen
 Alle Konfigurationen erfolgen direkt in der Portainer-Oberfläche. Diese überschreiben die Werte in der `.env`.
