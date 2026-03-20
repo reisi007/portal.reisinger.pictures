@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useEmailTemplates, EmailTemplate } from '../../logic/useEmailTemplates';
 
-export default function AdminMailTemplatesView() {
+export default function ManagementMailTemplatesView() {
     const { templates, isLoading, saveTemplate, deleteTemplate } = useEmailTemplates();
     const [editing, setEditing] = useState<Partial<EmailTemplate> | null>(null);
 

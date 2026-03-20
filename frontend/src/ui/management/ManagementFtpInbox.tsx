@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import { useFtp } from '../../logic/useFtp';
-import { useAdminGalleries } from '../../logic/useGalleries';
+import { useProtectedGalleries } from '../../logic/useGalleries';
 
-export default function AdminFtpInbox() {
+export default function ManagementFtpInbox() {
     const { status, isLoading, setTargetGallery, processInbox } = useFtp();
-    const { tree } = useAdminGalleries();
+    const { tree } = useProtectedGalleries();
     const [selectedId, setSelectedId] = useState<number | ''>('');
     const [processing, setProcessing] = useState(false);
 

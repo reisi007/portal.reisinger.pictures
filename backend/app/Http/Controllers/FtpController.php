@@ -44,7 +44,7 @@ class FtpController extends Controller
         $request->validate(['gallery_id' => 'nullable|integer|exists:galleries,id']);
         $user = auth('api')->user();
 
-        if ($request->gallery_id && !$user->is_admin && !$user->is_photographer) {
+        if ($request->gallery_id && !$user->is_photographer) {
             return response()->json(['error' => 'Keine Rechte für diese Aktion.'], 403);
         }
 
@@ -58,6 +58,9 @@ class FtpController extends Controller
     public function process(Request $request)
     {
         $user = auth('api')->user();
+        if (!$user->is_photographer) {
+            return response()->json(['error' => 'Nur Fotografen dürfen den FTP-Import anstoßen.'], 403);
+        }
         if (!$user->current_ftp_gallery_id) {
             return response()->json(['error' => 'Keine Ziel-Galerie ausgewählt.'], 400);
         }

@@ -109,7 +109,8 @@ class DownloadController extends Controller
             'user_agent' => $request->userAgent()
         ]);
 
-        if (!$user) {
+        $hasFullAccess = $user && ($user->is_admin || $user->canAccessGallery($gallery->id));
+        if (!$hasFullAccess) {
             $wmPath = $baseStoragePath . '/' . $gallery->id . '/_watermarked/' . $photo->filename;
             if (!file_exists($wmPath)) {
                 if (!is_dir(dirname($wmPath)))
@@ -150,8 +151,9 @@ class DownloadController extends Controller
                 if (!file_exists($sourcePath))
                     continue;
 
-                if (!$user) {
-                    $wmPath = $baseStoragePath . '/' . $gallery->id . '/_watermarked/' . $photo->filename;
+                $hasFullAccess = $user && ($user->is_admin || $user->canAccessGallery($gallery->id));
+        if (!$hasFullAccess) {
+            $wmPath = $baseStoragePath . '/' . $gallery->id . '/_watermarked/' . $photo->filename;
                     if (!file_exists($wmPath)) {
                         if (!is_dir(dirname($wmPath)))
                             mkdir(dirname($wmPath), 0755, true);

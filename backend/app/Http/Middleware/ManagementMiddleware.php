@@ -6,7 +6,7 @@ use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
-class AdminMiddleware
+class ManagementMiddleware
 {
     /**
      * Handle an incoming request.
@@ -22,7 +22,7 @@ class AdminMiddleware
 
         // Fotografen dürfen nur auf bestimmte Bereiche zugreifen
         if ($user->is_photographer && !$user->is_admin) {
-            $allowedPrefixes = ['api/admin/galleries', 'api/admin/gallery-groups', 'api/admin/upload', 'api/admin/ftp'];
+            $allowedPrefixes = ['api/management/galleries', 'api/management/gallery-groups', 'api/management/upload', 'api/management/ftp'];
             $path = $request->path();
             $isAllowed = false;
             foreach ($allowedPrefixes as $prefix) {

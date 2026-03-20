@@ -8,9 +8,10 @@ export interface SearchResults {
     photos: Photo[];
 }
 
-export function useSearch(query: string) {
+export function useSearch(query: string, personal: boolean = false) {
+    // Die Restriktion (query >= 2) wurde entfernt, damit leere Queries die neuesten Bilder laden
     const { data, error, isLoading } = useSWR<SearchResults>(
-        query.length >= 2 ? `/api/search?q=${encodeURIComponent(query)}` : null,
+        `/api/search?q=${encodeURIComponent(query)}`,
         fetcher
     );
 

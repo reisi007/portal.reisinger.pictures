@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import PageLayout from './components/PageLayout';
 
 export default function InviteView() {
     const { token } = useParams<{ token: string }>();
@@ -54,65 +55,69 @@ export default function InviteView() {
         }
     };
 
-    if (loading) return <div className="flex h-screen items-center justify-center"><span className="loading loading-spinner loading-lg text-primary"></span></div>;
+    if (loading) return <PageLayout><div className="flex h-full items-center justify-center"><span className="loading loading-spinner loading-lg text-primary"></span></div></PageLayout>;
     
     if (error && !galleryName) return (
-        <div className="flex h-screen items-center justify-center bg-base-200 p-4">
-            <div className="alert alert-error shadow-lg max-w-md">
-                <span className="iconify mdi--alert-circle text-2xl"></span>
-                <span>{error}</span>
+        <PageLayout>
+            <div className="flex h-full items-center justify-center p-4">
+                <div className="alert alert-error shadow-lg max-w-md">
+                    <span className="iconify mdi--alert-circle text-2xl"></span>
+                    <span>{error}</span>
+                </div>
             </div>
-        </div>
+        </PageLayout>
     );
 
     return (
-        <div className="flex h-screen items-center justify-center bg-base-200 p-4">
-            <div className="card w-full max-w-md bg-base-100 shadow-2xl">
-                <div className="card-body">
-                    <h2 className="card-title text-2xl mb-1">Willkommen zur Fotoauswahl</h2>
-                    <p className="text-base-content/70 mb-6">Galerie: <strong>{galleryName}</strong></p>
-                    
-                    {error && <div className="alert alert-error text-sm py-2 mb-4">{error}</div>}
-                    
-                    {inviteName && !requiresPassword ? (
-                        <div className="form-control mt-4">
-                            <button onClick={handleSubmit} className="btn btn-primary w-full text-lg">Weiter als {inviteName}</button>
-                        </div>
-                    ) : (
-                        <form onSubmit={handleSubmit} className="space-y-4">
-                            {!inviteName && (
-                                <>
-                                    <div className="form-control">
-                                        <label className="label"><span className="label-text font-bold">Dein Name</span></label>
-                                        <input type="text" required value={name} onChange={e => setName(e.target.value)} className="input input-bordered" placeholder="z.B. Maria Muster" />
-                                    </div>
-                                    <div className="form-control">
-                                        <label className="label"><span className="label-text font-bold">Deine E-Mail</span></label>
-                                        <input type="email" required value={email} onChange={e => setEmail(e.target.value)} className="input input-bordered" placeholder="maria@beispiel.de" />
-                                    </div>
-                                </>
-                            )}
-                            
-                            {inviteName && requiresPassword && (
-                                <p className="text-sm opacity-70">Hallo <strong>{inviteName}</strong>, bitte gib das Galerie-Passwort ein.</p>
-                            )}
-
-                            {requiresPassword && (
-                                <div className="form-control pt-2">
-                                    <label className="label"><span className="label-text font-bold text-warning">Galerie-Passwort</span></label>
-                                    <input type="password" required value={password} onChange={e => setPassword(e.target.value)} className="input input-bordered input-warning" />
-                                </div>
-                            )}
-                            
-                            <div className="form-control mt-6">
-                                <button type="submit" className="btn btn-primary w-full text-lg">
-                                    {inviteName ? `Weiter als ${inviteName}` : 'Galerie öffnen'}
-                                </button>
+        <PageLayout>
+            <div className="flex h-full items-center justify-center p-4">
+                <div className="card w-full max-w-md bg-base-100 shadow-2xl">
+                    <div className="card-body">
+                        <h2 className="card-title text-2xl mb-1">Willkommen zur Fotoauswahl</h2>
+                        <p className="text-base-content/70 mb-6">Galerie: <strong>{galleryName}</strong></p>
+                        
+                        {error && <div className="alert alert-error text-sm py-2 mb-4">{error}</div>}
+                        
+                        {inviteName && !requiresPassword ? (
+                            <div className="form-control mt-4">
+                                <button onClick={handleSubmit} className="btn btn-primary w-full text-lg">Weiter als {inviteName}</button>
                             </div>
-                        </form>
-                    )}
+                        ) : (
+                            <form onSubmit={handleSubmit} className="space-y-4">
+                                {!inviteName && (
+                                    <>
+                                        <div className="form-control">
+                                            <label className="label"><span className="label-text font-bold">Dein Name</span></label>
+                                            <input type="text" required value={name} onChange={e => setName(e.target.value)} className="input input-bordered" placeholder="z.B. Maria Muster" />
+                                        </div>
+                                        <div className="form-control">
+                                            <label className="label"><span className="label-text font-bold">Deine E-Mail</span></label>
+                                            <input type="email" required value={email} onChange={e => setEmail(e.target.value)} className="input input-bordered" placeholder="maria@beispiel.de" />
+                                        </div>
+                                    </>
+                                )}
+                                
+                                {inviteName && requiresPassword && (
+                                    <p className="text-sm opacity-70">Hallo <strong>{inviteName}</strong>, bitte gib das Galerie-Passwort ein.</p>
+                                )}
+
+                                {requiresPassword && (
+                                    <div className="form-control pt-2">
+                                        <label className="label"><span className="label-text font-bold text-warning">Galerie-Passwort</span></label>
+                                        <input type="password" required value={password} onChange={e => setPassword(e.target.value)} className="input input-bordered input-warning" />
+                                    </div>
+                                )}
+                                
+                                <div className="form-control mt-6">
+                                    <button type="submit" className="btn btn-primary w-full text-lg">
+                                        {inviteName ? `Weiter als ${inviteName}` : 'Galerie öffnen'}
+                                    </button>
+                                </div>
+                            </form>
+                        )}
+                    </div>
                 </div>
             </div>
-        </div>
+        </PageLayout>
     );
 }

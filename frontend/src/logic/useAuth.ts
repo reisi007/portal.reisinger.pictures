@@ -29,19 +29,17 @@ export function useAuth() {
         await mutate();
     };
 
-    const register = async (name: string, email: string, password: string): Promise<void> => {
+    const register = async (name: string, email: string): Promise<string> => {
         const response = await fetch('/api/auth/register', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ name, email, password })
+            body: JSON.stringify({ name, email })
         });
-        if (!response.ok) {
-            const data = await response.json();
-            throw new Error(data.message || 'Registrierung fehlgeschlagen');
-        }
         const data = await response.json();
-        localStorage.setItem('rp_jwt', data.access_token);
-        await mutate();
+        if (!response.ok) {
+            throw new Error(data.message || data.error || 'Registrierung fehlgeschlagen');
+        }
+        return data.message || 'Erfolgreich registriert';
     };
 
     const logout = (): void => {

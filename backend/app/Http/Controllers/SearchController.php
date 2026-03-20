@@ -13,12 +13,59 @@ class SearchController extends Controller
     public function search(Request $request)
     {
         $q = $request->input('q', '');
-        if (strlen($q) < 2) {
-            return response()->json(['galleries' => [], 'photos' => []]);
+        $user = auth('api')->user();
+
+        // --- PERSONAL FEED MODE (Für das Fotografen-Dashboard) ---
+        if ($request->boolean('personal') && $user) {
+            $allowedGalleryIds = $user->galleries()->pluck('galleries.id')->toArray();
+            if (empty($allowedGalleryIds)) {
+                return response()->json(['galleries' => [], 'photos' => []]);
+            }
+            $galleries = Gallery::whereIn('id', $allowedGalleryIds)->orderBy('id', 'desc')->take(12)->get();
+            $photos = Photo::whereIn('gallery_id', $allowedGalleryIds)->orderBy('id', 'desc')->take(24)->get();
+
+            $photos->transform(function($p) {
+                $p->load('gallery');
+                $baseUrl = '/media/' . $p->gallery->slug;
+                $p->thumb_url = $baseUrl . '/_thumbs/' . md5($p->filename . '1024') . '.webp';
+                return $p;
+            });
+
+            return response()->json(['galleries' => $galleries, 'photos' => $photos]);
         }
 
-        $user = auth('api')->user();
-        
+        // --- DISCOVERY MODE (Leere Suche) ---
+        if (strlen($q) < 2) {
+            $publicGalleryIds = Gallery::where('is_public', true)->pluck('id')->toArray();
+            
+            if ($user && !$user->is_admin) {
+                $allowedGalleryIds = $user->galleries()->pluck('galleries.id')->toArray();
+                $publicGalleryIds = array_unique(array_merge($allowedGalleryIds, $publicGalleryIds));
+            } elseif ($user && $user->is_admin) {
+                $publicGalleryIds = Gallery::pluck('id')->toArray();
+            }
+
+            if (empty($publicGalleryIds)) {
+                return response()->json(['galleries' => [], 'photos' => []]);
+            }
+
+            $galleries = Gallery::whereIn('id', $publicGalleryIds)->orderBy('id', 'desc')->take(12)->get();
+            $photos = Photo::whereIn('gallery_id', $publicGalleryIds)->orderBy('id', 'desc')->take(24)->get();
+
+            $photos->transform(function($p) {
+                $p->load('gallery');
+                $baseUrl = '/media/' . $p->gallery->slug;
+                $p->thumb_url = $baseUrl . '/_thumbs/' . md5($p->filename . '1024') . '.webp';
+                return $p;
+            });
+
+            return response()->json([
+                'galleries' => $galleries,
+                'photos' => $photos
+            ]);
+        }
+
+        // --- MEILISEARCH MODE ---
         $photoQuery = Photo::search($q);
         $galleryQuery = Gallery::search($q);
 
@@ -47,7 +94,6 @@ class SearchController extends Controller
 
             $galleries = $galleryQuery->take(50)->get();
         } catch (\Exception $e) {
-            // Graceful Degradation: Meilisearch Index might not exist yet if DB is empty
             Log::warning("Search error (missing index?): " . $e->getMessage());
             $photos = collect();
             $galleries = collect();

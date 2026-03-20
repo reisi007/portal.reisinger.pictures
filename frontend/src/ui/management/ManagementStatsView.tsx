@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useStats } from '../../logic/useStats';
 import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
-export default function AdminStatsView() {
+export default function ManagementStatsView() {
     const [page, setPage] = useState(1);
     const { stats, logs, isLoading } = useStats(page);
 

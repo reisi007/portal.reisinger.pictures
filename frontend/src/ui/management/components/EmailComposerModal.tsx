@@ -29,7 +29,7 @@ export default function EmailComposerModal({ isOpen, onClose, galleryId, templat
         if (!galleryId || !mailSubject || !mailBody) return;
         setSendingMail(true);
         try {
-            const data = await apiMutate<{success: boolean, notified_count: number}>(`/api/admin/galleries/${galleryId}/send-custom-email`, 'POST', { subject: mailSubject, body: mailBody });
+            const data = await apiMutate<{success: boolean, notified_count: number}>(`/api/management/galleries/${galleryId}/send-custom-email`, 'POST', { subject: mailSubject, body: mailBody });
             alert('Erfolg! ' + data.notified_count + ' E-Mails versendet.');
             onClose();
         } catch(err: any) { 

@@ -5,6 +5,7 @@ import { useAuth } from '../../logic/useAuth';
 import { apiMutate } from '../../api';
 import PhotoSwipeLightbox from 'photoswipe/lightbox';
 import 'photoswipe/style.css';
+import PageLayout from '../components/PageLayout';
 
 export default function ClientGalleryView() {
     const params = useParams();
@@ -83,80 +84,82 @@ export default function ClientGalleryView() {
         setFinishing(false);
     };
 
-    if (isLoading && photos.length === 0) return <div className="flex h-screen items-center justify-center"><span className="loading loading-spinner"></span></div>;
+    if (isLoading && photos.length === 0) return <PageLayout><div className="flex h-full items-center justify-center"><span className="loading loading-spinner"></span></div></PageLayout>;
     
     if (isError?.message === 'Unauthenticated' || isError?.message?.includes('401')) {
-        return <Navigate to="/login" replace />;
+        return <Navigate to="/" replace />;
     }
 
-    if (isError || !gallery) return <div className="p-8 text-center text-error">Galerie nicht gefunden oder Zugriff verweigert.</div>;
+    if (isError || !gallery) return <PageLayout><div className="p-8 text-center text-error">Galerie nicht gefunden oder Zugriff verweigert.</div></PageLayout>;
 
     return (
-        <div className="container mx-auto p-4 md:p-8 relative">
-            <button onClick={() => navigate('/')} className="btn btn-sm btn-ghost mb-4">&larr; Zurück zur Übersicht</button>
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
-                <div>
-                    <h1 className="text-3xl font-bold mb-2">{gallery.name}</h1>
-                    <p className="opacity-70">{gallery.type === 'selection' ? 'Wähle deine Favoriten aus.' : 'Lade deine Bilder herunter.'}</p>
+        <PageLayout>
+            <div className="container mx-auto p-4 md:p-8 relative">
+                <button onClick={() => navigate('/')} className="btn btn-sm btn-ghost mb-4">&larr; Zurück zur Übersicht</button>
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+                    <div>
+                        <h1 className="text-3xl font-bold mb-2">{gallery.name}</h1>
+                        <p className="opacity-70">{gallery.type === 'selection' ? 'Wähle deine Favoriten aus.' : 'Lade deine Bilder herunter.'}</p>
+                    </div>
+                    
+                    <div className="flex gap-2">
+                        {gallery.type === 'selection' && user && (
+                            <button onClick={handleFinishRating} disabled={finishing} className="btn btn-success text-white">
+                                {finishing ? <span className="loading loading-spinner"></span> : <span className="iconify mdi--check-all"></span>}
+                                Auswahl abschließen
+                            </button>
+                        )}
+                        {gallery.type === 'delivery' && totalPhotos > 0 && (
+                            <button onClick={() => window.open('/api/galleries/' + gallery.id + '/download-zip', '_self')} className="btn btn-primary">
+                                Alle herunterladen (.zip)
+                            </button>
+                        )}
+                    </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-6" ref={galleryRef}>
+                    {photos.map(photo => (
+                        <div key={photo.id} className="card bg-base-200 shadow-xl overflow-hidden relative group">
+                            <a href={photo.url} 
+                               data-pswp-width={photo.width || 2000} 
+                               data-pswp-height={photo.height || 1333} 
+                               data-title={photo.title}
+                               data-desc={photo.description}
+                               data-artist={photo.artist}
+                               className="pswp-item block relative aspect-square">
+                                <img src={photo.thumb_url} className="object-cover w-full h-full" loading="lazy" />
+                            </a>
+                            
+                            <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <button onClick={(e) => { e.preventDefault(); navigate('/photos/' + photo.id); }} className="btn btn-circle btn-sm btn-neutral shadow-lg" title="Details & Metadaten">
+                                    <span className="iconify mdi--information-variant text-lg"></span>
+                                </button>
+                            </div>
+
+                            <div className="card-body p-4 bg-base-100 flex flex-col gap-3">
+                                {gallery.type === 'selection' ? (
+                                    user ? (
+                                        <>
+                                            <div className="rating rating-sm justify-center">
+                                                {[1, 2, 3, 4, 5].map(star => (
+                                                    <input key={star} type="radio" className={"mask mask-star-2 " + (photo.rating >= star ? 'bg-orange-400' : 'bg-base-300')} checked={photo.rating === star} onChange={() => ratePhoto(photo.id, star, photo.comment || '')} />
+                                                ))}
+                                            </div>
+                                            <input type="text" placeholder="Kommentar..." defaultValue={photo.comment || ''} onBlur={(e) => ratePhoto(photo.id, photo.rating || 0, e.target.value)} className="input input-bordered input-sm w-full" />
+                                        </>
+                                    ) : null
+                                ) : (
+                                    <button onClick={() => window.open('/api/photos/' + photo.id + '/download', '_self')} className="btn btn-secondary btn-sm">Einzel-Download</button>
+                                )}
+                            </div>
+                        </div>
+                    ))}
                 </div>
                 
-                <div className="flex gap-2">
-                    {gallery.type === 'selection' && user && (
-                        <button onClick={handleFinishRating} disabled={finishing} className="btn btn-success text-white">
-                            {finishing ? <span className="loading loading-spinner"></span> : <span className="iconify mdi--check-all"></span>}
-                            Auswahl abschließen
-                        </button>
-                    )}
-                    {gallery.type === 'delivery' && totalPhotos > 0 && (
-                        <button onClick={() => window.open('/api/galleries/' + gallery.id + '/download-zip', '_self')} className="btn btn-primary">
-                            Alle herunterladen (.zip)
-                        </button>
-                    )}
-                </div>
+                {!isReachingEnd && photos.length > 0 && (
+                    <div className="text-center mt-8"><button className="btn btn-outline" onClick={() => setSize(size + 1)}>Mehr laden</button></div>
+                )}
             </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-6" ref={galleryRef}>
-                {photos.map(photo => (
-                    <div key={photo.id} className="card bg-base-200 shadow-xl overflow-hidden relative group">
-                        <a href={photo.url} 
-                           data-pswp-width={photo.width || 2000} 
-                           data-pswp-height={photo.height || 1333} 
-                           data-title={photo.title}
-                           data-desc={photo.description}
-                           data-artist={photo.artist}
-                           className="pswp-item block relative aspect-square">
-                            <img src={photo.thumb_url} className="object-cover w-full h-full" loading="lazy" />
-                        </a>
-                        
-                        <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <button onClick={(e) => { e.preventDefault(); navigate('/photos/' + photo.id); }} className="btn btn-circle btn-sm btn-neutral shadow-lg" title="Details & Metadaten">
-                                <span className="iconify mdi--information-variant text-lg"></span>
-                            </button>
-                        </div>
-
-                        <div className="card-body p-4 bg-base-100 flex flex-col gap-3">
-                            {gallery.type === 'selection' ? (
-                                user ? (
-                                    <>
-                                        <div className="rating rating-sm justify-center">
-                                            {[1, 2, 3, 4, 5].map(star => (
-                                                <input key={star} type="radio" className={"mask mask-star-2 " + (photo.rating >= star ? 'bg-orange-400' : 'bg-base-300')} checked={photo.rating === star} onChange={() => ratePhoto(photo.id, star, photo.comment || '')} />
-                                            ))}
-                                        </div>
-                                        <input type="text" placeholder="Kommentar..." defaultValue={photo.comment || ''} onBlur={(e) => ratePhoto(photo.id, photo.rating || 0, e.target.value)} className="input input-bordered input-sm w-full" />
-                                    </>
-                                ) : null
-                            ) : (
-                                <button onClick={() => window.open('/api/photos/' + photo.id + '/download', '_self')} className="btn btn-secondary btn-sm">Einzel-Download</button>
-                            )}
-                        </div>
-                    </div>
-                ))}
-            </div>
-            
-            {!isReachingEnd && photos.length > 0 && (
-                <div className="text-center mt-8"><button className="btn btn-outline" onClick={() => setSize(size + 1)}>Mehr laden</button></div>
-            )}
-        </div>
+        </PageLayout>
     );
 }

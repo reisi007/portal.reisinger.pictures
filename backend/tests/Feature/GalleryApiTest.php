@@ -35,7 +35,7 @@ class GalleryApiTest extends TestCase
 
         $response = $this->withHeaders([
             'Authorization' => 'Bearer ' . $token,
-        ])->postJson('/api/admin/galleries', [
+        ])->postJson('/api/management/galleries', [
             'name' => 'Test Hochzeit 2026',
             'type' => 'delivery',
             'is_public' => true
@@ -52,7 +52,7 @@ class GalleryApiTest extends TestCase
 
     public function test_guest_cannot_create_gallery(): void
     {
-        $response = $this->postJson('/api/admin/galleries', [
+        $response = $this->postJson('/api/management/galleries', [
             'name' => 'Hacker Gallery'
         ]);
 

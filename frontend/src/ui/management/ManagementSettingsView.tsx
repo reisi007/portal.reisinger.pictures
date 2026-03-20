@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useSettings } from '../../logic/useSettings';
 
-export default function AdminSettingsView() {
+export default function ManagementSettingsView() {
     const { watermark, updateWatermark } = useSettings();
     const [file, setFile] = useState<File | null>(null);
     const [scale, setScale] = useState<number>(0.1);
@@ -25,7 +25,7 @@ export default function AdminSettingsView() {
         fd.append('scale', scale.toString());
         fd.append('opacity', opacity.toString());
         fd.append('position', position);
-        
+
         await updateWatermark(fd);
         setSaving(false);
         setFile(null);
@@ -38,7 +38,7 @@ export default function AdminSettingsView() {
             <div className="card bg-base-200 border border-base-300">
                 <div className="card-body">
                     <h2 className="card-title text-2xl mb-4">Wasserzeichen für Gäste</h2>
-                    
+
                     {!watermark?.has_svg && (
                         <div className="alert alert-warning shadow-sm mb-6">
                             <span className="iconify mdi--alert text-xl"></span>
@@ -55,7 +55,7 @@ export default function AdminSettingsView() {
                     <form onSubmit={handleSave} className="space-y-6">
                         <div className="form-control w-full">
                             <label className="label"><span className="label-text font-bold">Logo (nur .svg)</span></label>
-                            <input type="file" accept=".svg" onChange={e => setFile(e.target.files?.[0] || null)} className="file-input file-input-bordered w-full max-w-md" />
+                            <input type="file" accept=".svg" onChange={e => setFile(e.target.files?.[0] || null)} className="file-input file-input-bordered w-full" />
                             <div className="label"><span className="label-text-alt opacity-70">Lade eine neue Datei hoch, um das aktuelle Logo zu ersetzen.</span></div>
                         </div>
 

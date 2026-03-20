@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../logic/useAuth';
 import { GalleryGroup, Gallery, GalleryTreeResponse } from '../../logic/useGalleries';
@@ -12,18 +12,55 @@ interface SidebarProps {
     onDeleteGallery?: (id: number) => void;
     onGenerateInvite?: (id: number) => void;
     onSendEmail?: (id: number) => void;
-    onViewChange?: (view: any) => void;
     currentView?: string;
     onCloseMobile?: () => void;
 }
 
 export default function Sidebar(props: SidebarProps) {
-    const { user, logout } = useAuth();
+    const { user, login, logout, register } = useAuth();
     const navigate = useNavigate();
+
+    const [showRegister, setShowRegister] = useState(false);
+    
+    // Login State
+    const [loginEmail, setLoginEmail] = useState('');
+    const [loginPassword, setLoginPassword] = useState('');
+    const [authError, setAuthError] = useState('');
+    const [isLoggingIn, setIsLoggingIn] = useState(false);
+
+    // Register State
+    const [regName, setRegName] = useState('');
+    const [regEmail, setRegEmail] = useState('');
+    const [regSuccess, setRegSuccess] = useState('');
 
     const handleLogout = () => {
         logout();
-        navigate('/login');
+        navigate('/');
+    };
+
+    const handleSidebarLogin = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setIsLoggingIn(true);
+        setAuthError('');
+        try {
+            await login(loginEmail, loginPassword);
+        } catch(err: any) {
+            setAuthError('Login fehlgeschlagen.');
+        }
+        setIsLoggingIn(false);
+    };
+
+    const handleSidebarRegister = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setIsLoggingIn(true);
+        setAuthError('');
+        try {
+            const msg = await register(regName, regEmail);
+            setRegSuccess(msg);
+        } catch(err: any) {
+            setAuthError(err.message || 'Registrierung fehlgeschlagen.');
+        }
+        setIsLoggingIn(false);
     };
 
     const renderGroup = (group: GalleryGroup) => {
@@ -67,7 +104,6 @@ export default function Sidebar(props: SidebarProps) {
     const safeGroups = Array.isArray(props.tree?.groups) ? props.tree?.groups : [];
     const safeRootGalleries = Array.isArray(props.tree?.root_galleries) ? props.tree?.root_galleries : [];
     
-    // Architektur: Klare Trennung der Nutzer-Modi auf Container-Ebene
     const isAdminOrPhotog = user?.is_admin || user?.is_photographer;
     const isClient = !isAdminOrPhotog && user;
     const isGuest = !user;
@@ -96,17 +132,68 @@ export default function Sidebar(props: SidebarProps) {
                 )}
             </div>
 
+            {/* NEU: Login/Register Formular OBEN in der Sidebar */}
+            {isGuest && (
+                <div className="p-6 border-b border-base-300 bg-base-100">
+                    {showRegister ? (
+                        <>
+                            <h3 className="font-bold mb-3 flex items-center gap-2"><span className="iconify mdi--account-plus"></span> Registrieren</h3>
+                            {regSuccess ? (
+                                <div className="alert alert-success text-sm p-3 shadow-sm">{regSuccess}</div>
+                            ) : (
+                                <form onSubmit={handleSidebarRegister} className="space-y-3">
+                                    <input type="text" required placeholder="Dein Name" value={regName} onChange={e=>setRegName(e.target.value)} className="input input-sm input-bordered w-full" />
+                                    <input type="email" required placeholder="E-Mail Adresse" value={regEmail} onChange={e=>setRegEmail(e.target.value)} className="input input-sm input-bordered w-full" />
+                                    {authError && <p className="text-xs text-error font-semibold leading-tight">{authError}</p>}
+                                    <button type="submit" className="btn btn-sm btn-primary w-full mt-2" disabled={isLoggingIn}>
+                                        {isLoggingIn ? <span className="loading loading-spinner"></span> : 'Registrieren'}
+                                    </button>
+                                </form>
+                            )}
+                            <div className="text-center mt-3 text-xs">
+                                <button onClick={() => { setShowRegister(false); setAuthError(''); }} className="link link-hover text-base-content/70">Zurück zum Login</button>
+                            </div>
+                        </>
+                    ) : (
+                        <>
+                            <h3 className="font-bold mb-3 flex items-center gap-2"><span className="iconify mdi--login"></span> Anmelden</h3>
+                            <form onSubmit={handleSidebarLogin} className="space-y-3">
+                                <input type="email" required placeholder="E-Mail Adresse" value={loginEmail} onChange={e=>setLoginEmail(e.target.value)} className="input input-sm input-bordered w-full" />
+                                <input type="password" required placeholder="Passwort" value={loginPassword} onChange={e=>setLoginPassword(e.target.value)} className="input input-sm input-bordered w-full" />
+                                {authError && <p className="text-xs text-error font-semibold leading-tight">{authError}</p>}
+                                <button type="submit" className="btn btn-sm btn-primary w-full mt-2" disabled={isLoggingIn}>
+                                    {isLoggingIn ? <span className="loading loading-spinner"></span> : 'Login'}
+                                </button>
+                            </form>
+                            <div className="text-center mt-3 text-xs">
+                                <button onClick={() => { setShowRegister(true); setAuthError(''); }} className="link link-hover text-base-content/70">Neu hier? Registrieren</button>
+                            </div>
+                        </>
+                    )}
+                </div>
+            )}
+
             <ul className="menu bg-base-200 w-full p-2 border-b border-base-300">
-                {/* ADMIN / PHOTOGRAPHER MENU */}
                 {isAdminOrPhotog && (
                     <>
-                        <li><Link to="/" className={props.currentView === 'structure' ? 'active' : ''} onClick={() => { props.onViewChange?.('structure'); props.onCloseMobile?.(); }}>
+                        <li><Link to="/" className={props.currentView === 'structure' ? 'active' : ''} onClick={props.onCloseMobile}>
                             <span className="iconify mdi--folder-multiple text-lg"></span> Galerie-Struktur
                         </Link></li>
                         {user.is_admin && (
-                            <li><a className={props.currentView === 'stats' ? 'active' : ''} onClick={() => { props.onViewChange?.('stats'); props.onCloseMobile?.(); }}>
-                                <span className="iconify mdi--chart-box text-lg"></span> Statistiken & Logs
-                            </a></li>
+                            <>
+                                <li><Link to="/users" className={props.currentView === 'users' ? 'active' : ''} onClick={props.onCloseMobile}>
+                                    <span className="iconify mdi--account-group text-lg"></span> Benutzer & Rechte
+                                </Link></li>
+                                <li><Link to="/mail-templates" className={props.currentView === 'mail-templates' ? 'active' : ''} onClick={props.onCloseMobile}>
+                                    <span className="iconify mdi--email-multiple text-lg"></span> E-Mail Vorlagen
+                                </Link></li>
+                                <li><Link to="/stats" className={props.currentView === 'stats' ? 'active' : ''} onClick={props.onCloseMobile}>
+                                    <span className="iconify mdi--chart-box text-lg"></span> Statistiken & Logs
+                                </Link></li>
+                                <li><Link to="/settings" className={props.currentView === 'settings' ? 'active' : ''} onClick={props.onCloseMobile}>
+                                    <span className="iconify mdi--cog text-lg"></span> Einstellungen
+                                </Link></li>
+                            </>
                         )}
                         <li><Link to="/search" className={props.currentView === 'search' ? 'active' : ''} onClick={props.onCloseMobile}>
                             <span className="iconify mdi--magnify text-lg"></span> Globale Suche
@@ -114,7 +201,6 @@ export default function Sidebar(props: SidebarProps) {
                     </>
                 )}
 
-                {/* CLIENT MENU */}
                 {isClient && (
                     <>
                         <li><Link to="/" className={props.currentView !== 'search' ? 'active' : ''} onClick={props.onCloseMobile}>
@@ -126,14 +212,10 @@ export default function Sidebar(props: SidebarProps) {
                     </>
                 )}
 
-                {/* GUEST MENU */}
                 {isGuest && (
                     <>
-                        <li><Link to="/search" className="active" onClick={props.onCloseMobile}>
+                        <li><Link to="/search" className={props.currentView === 'search' ? 'active' : ''} onClick={props.onCloseMobile}>
                             <span className="iconify mdi--magnify text-lg"></span> Öffentliche Suche
-                        </Link></li>
-                        <li><Link to="/login" onClick={props.onCloseMobile}>
-                            <span className="iconify mdi--login text-lg"></span> Anmelden
                         </Link></li>
                     </>
                 )}
@@ -141,12 +223,16 @@ export default function Sidebar(props: SidebarProps) {
 
             {isAdminOrPhotog && props.currentView === 'structure' && (
                 <div className="p-4 flex gap-2 border-b border-base-300">
-                    <button onClick={props.onOpenGalleryModal} className="btn btn-primary btn-sm flex-1">
-                        <span className="iconify mdi--image-plus"></span> Galerie...
-                    </button>
-                    <button onClick={props.onOpenGroupModal} className="btn btn-outline btn-sm flex-1">
-                        <span className="iconify mdi--folder-plus"></span> Meta-Galerie...
-                    </button>
+                    {user?.is_photographer && (
+                        <button onClick={props.onOpenGalleryModal} className="btn btn-primary btn-sm flex-1">
+                            <span className="iconify mdi--image-plus"></span> Galerie...
+                        </button>
+                    )}
+                    {user?.is_admin && (
+                        <button onClick={props.onOpenGroupModal} className="btn btn-outline btn-sm flex-1">
+                            <span className="iconify mdi--folder-plus"></span> Meta-Galerie...
+                        </button>
+                    )}
                 </div>
             )}
 
@@ -154,7 +240,6 @@ export default function Sidebar(props: SidebarProps) {
                 {props.isLoading && <div className="text-center"><span className="loading loading-dots loading-md"></span></div>}
                 {props.isError && <div className="text-error text-sm">Fehler beim Laden.</div>}
                 
-                {/* ADMIN TREE */}
                 {isAdminOrPhotog && props.currentView === 'structure' && props.tree && (
                     <ul className="menu bg-base-200 w-full rounded-box p-0">
                         {safeGroups.map(renderGroup)}
@@ -165,7 +250,6 @@ export default function Sidebar(props: SidebarProps) {
                     </ul>
                 )}
 
-                {/* CLIENT GALLERIES */}
                 {isClient && props.currentView !== 'search' && (
                     <ul className="menu bg-base-200 w-full rounded-box p-0">
                         <li className="menu-title"><span>Freigeschaltet</span></li>

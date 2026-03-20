@@ -24,6 +24,10 @@ class ImageController extends Controller
         if (!$gallery) return response()->json(['error' => 'Galerie nicht gefunden'], 404);
 
         $user = auth('api')->user();
+
+        if (!$user->is_photographer) {
+            return response()->json(['error' => 'Nur Fotografen dürfen Bilder hochladen.'], 403);
+        }
         
         if (!$user->canAccessGallery($gallery->id)) {
             return response()->json(['error' => 'Keine Berechtigung für diese Galerie.'], 403);

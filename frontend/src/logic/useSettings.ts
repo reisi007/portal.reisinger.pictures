@@ -1,5 +1,6 @@
 import useSWR from 'swr';
 import { fetcher } from '../api';
+import { useAuth } from './useAuth';
 
 export interface WatermarkSettings {
     has_svg: boolean;
@@ -9,11 +10,18 @@ export interface WatermarkSettings {
 }
 
 export function useSettings() {
-    const { data: watermark, mutate } = useSWR<WatermarkSettings>('/api/admin/settings/watermark', fetcher);
+    const { user } = useAuth();
+    // Nur Admins dürfen die Settings abrufen, verhindert 403 Fehler für Fotografen/Kunden
+    const canFetch = user?.is_admin;
+
+    const { data: watermark, mutate } = useSWR<WatermarkSettings>(
+        canFetch ? '/api/management/settings/watermark' : null, 
+        fetcher
+    );
 
     const updateWatermark = async (formData: FormData) => {
         const token = localStorage.getItem('rp_jwt');
-        await fetch('/api/admin/settings/watermark', {
+        await fetch('/api/management/settings/watermark', {
             method: 'POST',
             headers: { 'Authorization': `Bearer ${token}` },
             body: formData
