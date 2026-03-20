@@ -1,0 +1,133 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        // --- 1. START & RUN ---
+        {
+            "label": "Start Docker",
+            "type": "shell",
+            "command": "docker compose -f docker-compose.local.yml up -d",
+            "presentation": {
+                "reveal": "always",
+                "panel": "new",
+                "clear": true
+            }
+        },
+        {
+            "label": "Start Frontend",
+            "type": "shell",
+            "command": "npm run dev",
+            "isBackground": true,
+            "options": {
+                "cwd": "${workspaceFolder}/frontend"
+            },
+            "problemMatcher": [
+                {
+                    "pattern": [
+                        {
+                            "regexp": ".",
+                            "file": 1,
+                            "location": 2,
+                            "message": 3
+                        }
+                    ],
+                    "background": {
+                        "activeOnStart": true,
+                        "beginsPattern": "^.*$",
+                        "endsPattern": "ready in|Local:"
+                    }
+                }
+            ],
+            "presentation": {
+                "reveal": "always",
+                "panel": "new",
+                "clear": true
+            }
+        },
+        // --- 2. SETUP & INIT ---
+        {
+            "label": "Composer Install",
+            "type": "shell",
+            "command": "composer install",
+            "options": {
+                "cwd": "${workspaceFolder}/backend"
+            },
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared"
+            }
+        },
+        {
+            "label": "Init Backend",
+            "type": "shell",
+            "command": "php artisan optimize:clear",
+            "options": {
+                "cwd": "${workspaceFolder}/backend"
+            },
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared"
+            }
+        },
+        {
+            "label": "Generate JWT",
+            "type": "shell",
+            "command": "php artisan jwt:secret",
+            "options": {
+                "cwd": "${workspaceFolder}/backend"
+            },
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared"
+            }
+        },
+        {
+            "label": "Migrate DB",
+            "type": "shell",
+            "command": "php artisan migrate",
+            "options": {
+                "cwd": "${workspaceFolder}/backend"
+            },
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared"
+            }
+        },
+        // --- 3. WARTUNG ---
+        {
+            "label": "Sync Meilisearch",
+            "type": "shell",
+            "command": "php artisan scout:sync",
+            "options": {
+                "cwd": "${workspaceFolder}/backend"
+            },
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared"
+            }
+        },
+        {
+            "label": "Stop Docker",
+            "type": "shell",
+            "command": "docker compose -f docker-compose.local.yml down",
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared"
+            }
+        },
+        // --- 4. GEFAHR ---
+        {
+            "label": "Reset DB",
+            "type": "shell",
+            "command": "php artisan migrate:fresh --seed",
+            "options": {
+                "cwd": "${workspaceFolder}/backend"
+            },
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared",
+                "focus": true
+            },
+            "problemMatcher": []
+        }
+    ]
+}

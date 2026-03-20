@@ -26,7 +26,7 @@ class SearchController extends Controller
 
             $photos->transform(function($p) {
                 $p->load('gallery');
-                $baseUrl = '/media/' . $p->gallery->slug;
+                $baseUrl = '/api/media/' . $p->gallery->slug;
                 $p->thumb_url = $baseUrl . '/_thumbs/' . md5($p->filename . '1024') . '.webp';
                 return $p;
             });
@@ -54,7 +54,7 @@ class SearchController extends Controller
 
             $photos->transform(function($p) {
                 $p->load('gallery');
-                $baseUrl = '/media/' . $p->gallery->slug;
+                $baseUrl = '/api/media/' . $p->gallery->slug;
                 $p->thumb_url = $baseUrl . '/_thumbs/' . md5($p->filename . '1024') . '.webp';
                 return $p;
             });
@@ -87,7 +87,7 @@ class SearchController extends Controller
 
             $photos->transform(function($p) {
                 $p->load('gallery');
-                $baseUrl = '/media/' . $p->gallery->slug;
+                $baseUrl = '/api/media/' . $p->gallery->slug;
                 $p->thumb_url = $baseUrl . '/_thumbs/' . md5($p->filename . '1024') . '.webp';
                 return $p;
             });
@@ -135,7 +135,7 @@ class SearchController extends Controller
             }
         }
 
-        $baseUrl = '/media/' . $photo->gallery->slug;
+        $baseUrl = '/api/media/' . $photo->gallery->slug;
         $photo->url = $baseUrl . '/' . $photo->filename;
         $photo->thumb_url = $baseUrl . '/_thumbs/' . md5($photo->filename . '1024') . '.webp';
 

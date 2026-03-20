@@ -24,7 +24,7 @@ class GalleryFrontendController extends Controller
         $photos = $gallery->photos()->paginate(50);
 
         $photos->getCollection()->transform(function ($photo) use ($gallery, $user) {
-            $baseUrl = '/media/' . $gallery->slug;
+            $baseUrl = '/api/media/' . $gallery->slug;
             $photo->url = $baseUrl . '/' . $photo->filename;
             $photo->thumb_url = $baseUrl . '/_thumbs/' . md5($photo->filename . '1024') . '.webp';
             

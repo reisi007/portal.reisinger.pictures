@@ -26,7 +26,7 @@ class FileDeliveryController extends Controller
         $baseStoragePath = env('PHOTO_STORAGE_PATH', base_path('../photos'));
         $watermarkService = app(WatermarkService::class);
 
-        if (str_starts_with($request->path(), "media/$slug/_thumbs/")) {
+        if (str_starts_with($request->path(), "api/media/$slug/_thumbs/")) {
             $sourcePath = $baseStoragePath . '/' . $gallery->id . '/_thumbs/' . $cleanFilename;
             $path = $sourcePath;
             $xAccelPath = '/protected-photos/' . $gallery->id . '/_thumbs/' . $cleanFilename;
