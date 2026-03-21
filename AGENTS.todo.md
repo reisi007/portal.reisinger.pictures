@@ -2,6 +2,13 @@
 
 ## Offene Punkte
 
+
+### Lightroom Plugin (Feature Parity)
+- [x] **Layout & Rollencheck**: Spacing der UI verbessern und prüfen, ob der eingeloggte User die Fotografen-Rolle hat (via `/api/auth/me`).
+- [x] **Galerien bearbeiten**: Möglichkeit hinzufügen, bestehende Galerien umzubenennen und den Live-Modus zu toggeln.
+- [x] **Meta-Galerien verwalten**: Erstellen und Bearbeiten von Ordnern / Meta-Galerien direkt aus LR heraus ermöglichen.
+- [x] **Erweitertes Invite-Management**: Das "Einladungs-Link kopieren"-Feature ausbauen, um eine Liste von benannten Invites verwalten zu können (wie im React Frontend).
+
 ### Frontend
 - [ ] **UI Refactoring**: Überprüfen und Sicherstellen, dass alle Infotexte/Beschreibungen in Formularen strikt *unterhalb* des jeweiligen Inputs angezeigt werden.
 - [ ] **Feature (Galerie-Management)**: Möglichkeit schaffen, direkt aus der Galerie-Verwaltung heraus registrierte Nutzer der Galerie oder Meta-Galerie hinzuzufügen/zu entfernen (bisher nur global in /users möglich).
