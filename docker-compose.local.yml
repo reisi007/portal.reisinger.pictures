@@ -1,4 +1,3 @@
-version: '3.8'
 services:
   db:
     image: mariadb:10.11
@@ -11,10 +10,11 @@ services:
       MYSQL_USER: portal_user
       MYSQL_PASSWORD: admin
     volumes: ["db_data_local:/var/lib/mysql"]
-    
+
   search:
     image: getmeili/meilisearch:v1.6
     container_name: portal_search_local
+    restart: unless-stopped
     environment:
       MEILI_ENV: development
       MEILI_MASTER_KEY: local_meili_secret

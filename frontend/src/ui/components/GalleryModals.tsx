@@ -171,8 +171,13 @@ export default function GalleryModals({
     };
 
     const selectedParent = availableGroups.find(g => g.id === (galleryParentId === '' ? null : Number(galleryParentId)));
-    const forcedVisibility = selectedParent?.is_public;
-    const isVisibilityForced = forcedVisibility !== undefined && forcedVisibility !== null;
+    let isVisibilityForced = selectedParent?.is_public !== undefined && selectedParent?.is_public !== null;
+    let forcedVisibility = selectedParent?.is_public;
+
+    if (newGalleryType === 'selection') {
+        isVisibilityForced = true;
+        forcedVisibility = false;
+    }
 
     return (
         <>
@@ -306,8 +311,9 @@ export default function GalleryModals({
                                 </select>
                                 {isVisibilityForced && (
                                     <label className="label pt-1 pb-0">
-                                        <span
-                                            className="label-text-alt text-warning leading-tight whitespace-normal break-words">Wird durch Meta-Galerie erzwungen</span>
+                                        <span className="label-text-alt text-warning leading-tight whitespace-normal break-words">
+                                            {newGalleryType === 'selection' ? 'Bewertungs-Galerien sind zwingend privat.' : 'Wird durch Meta-Galerie erzwungen'}
+                                        </span>
                                     </label>
                                 )}
                             </div>
@@ -326,10 +332,10 @@ export default function GalleryModals({
 
                         {newGalleryType === 'delivery' && (
                             <div className="form-control w-full mb-4">
-                                <label className="cursor-pointer label justify-start gap-4 bg-base-200 p-3 rounded-box">
+                                <label className="cursor-pointer label justify-start gap-4 bg-base-200 p-3 rounded-box w-full">
                                     <input type="checkbox" checked={newGalleryIsLive}
                                            onChange={e => setNewGalleryIsLive(e.target.checked)}
-                                           className="checkbox checkbox-error"/>
+                                           className="checkbox checkbox-primary"/>
                                     <div>
                                         <span className="label-text font-bold block">LIVE Galerie</span>
                                         <span

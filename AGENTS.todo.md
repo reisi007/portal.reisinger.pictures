@@ -3,6 +3,9 @@
 ## Offene Punkte
 
 ### Frontend
+- [ ] **UI Refactoring**: Überprüfen und Sicherstellen, dass alle Infotexte/Beschreibungen in Formularen strikt *unterhalb* des jeweiligen Inputs angezeigt werden.
+- [ ] **Feature (Galerie-Management)**: Möglichkeit schaffen, direkt aus der Galerie-Verwaltung heraus registrierte Nutzer der Galerie oder Meta-Galerie hinzuzufügen/zu entfernen (bisher nur global in /users möglich).
+- [ ] **Frontend Refactoring**: Alle verbleibenden `alert()` Aufrufe (z.B. im Reset-Password, Login, Invites) entfernen und durch saubere UI-Toasts ersetzen.
 - [ ] **Refactoring**: Reuse types in properties in the Props of the React hooks to make them more human readable and maintainable.
 
 ### Backend & Datenbank

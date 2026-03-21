@@ -40,6 +40,37 @@ export default function ManagementGalleryView() {
     const [isDragging, setIsDragging] = useState(false);
     const [isMailModalOpen, setIsMailModalOpen] = useState(false);
     const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
+    
+    // Rating Modal State
+    const [toastMessage, setToastMessage] = useState<{type: 'error'|'success', text: string} | null>(null);
+    const [showRatingsModal, setShowRatingsModal] = useState(false);
+    const [ratingsData, setRatingsData] = useState<any[]>([]);
+    const [ratingStatusData, setRatingStatusData] = useState<any[]>([]);
+    const [totalGalleryPhotos, setTotalGalleryPhotos] = useState(0);
+
+    const fetchRatings = async () => {
+        try {
+            const headers = { 'Authorization': 'Bearer ' + (localStorage.getItem('rp_jwt') || '') };
+            const [resExport, resStatus] = await Promise.all([
+                fetch('/api/management/galleries/' + gallery!.id + '/export', { headers }),
+                fetch('/api/management/galleries/' + gallery!.id + '/rating-status', { headers })
+            ]);
+
+            if (!resExport.ok || !resStatus.ok) throw new Error('API Error');
+
+            const dataExport = await resExport.json();
+            const dataStatus = await resStatus.json();
+
+            setRatingsData(dataExport);
+            setRatingStatusData(dataStatus.users);
+            setTotalGalleryPhotos(dataStatus.total_photos);
+
+            setShowRatingsModal(true);
+        } catch (e) {
+            setToastMessage({ type: 'error', text: 'Die Bewertungen konnten nicht geladen werden.' });
+            setTimeout(() => setToastMessage(null), 4000);
+        }
+    };
 
     useEffect(() => {
         let lightbox: PhotoSwipeLightbox | null = null;
@@ -91,6 +122,15 @@ export default function ManagementGalleryView() {
     return (
         <PageLayout>
             <div className="container mx-auto p-4 md:p-8">
+                {toastMessage && (
+                    <div className="toast toast-top toast-center z-[100] mt-12 md:mt-4 transition-all">
+                        <div className={`alert alert-${toastMessage.type} shadow-xl`}>
+                            <span className="iconify mdi--alert-circle text-xl"></span>
+                            <span>{toastMessage.text}</span>
+                            <button className="btn btn-ghost btn-sm btn-circle" onClick={() => setToastMessage(null)}>✕</button>
+                        </div>
+                    </div>
+                )}
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
                     <h1 className="text-3xl font-bold flex items-center gap-2">
                         {gallery.name}
@@ -103,14 +143,19 @@ export default function ManagementGalleryView() {
                         )}
                     </h1>
                     <div className="flex flex-wrap gap-4 items-center">
-                        <span className="badge badge-ghost font-normal">{downloadsCount || 0} Downloads</span>
+                        {gallery.type === 'delivery' && <span className="badge badge-ghost font-normal">{downloadsCount || 0} Downloads</span>}
                         {user?.is_photographer && (
                             <div className="flex gap-2">
+                                {gallery.type === 'selection' && (
+                                    <button onClick={fetchRatings} className="btn btn-secondary btn-sm">
+                                        <span className="iconify mdi--star-outline"></span> Bewertungen...
+                                    </button>
+                                )}
                                 <button onClick={() => setIsInviteModalOpen(true)} className="btn btn-outline btn-sm">
-                                    <span className="iconify mdi--link"></span> Einladungslink
+                                    <span className="iconify mdi--link"></span> Einladungslink...
                                 </button>
                                 <button onClick={() => setIsMailModalOpen(true)} className="btn btn-primary btn-sm">
-                                    <span className="iconify mdi--email-fast"></span> E-Mail senden
+                                    <span className="iconify mdi--email-fast"></span> E-Mail senden...
                                 </button>
                             </div>
                         )}
@@ -210,6 +255,85 @@ export default function ManagementGalleryView() {
                         navigate('/');
                     }}
                 />
+
+                {showRatingsModal && (
+                    <div className="modal modal-open z-50">
+                        <div className="modal-box max-w-5xl relative flex flex-col max-h-[90vh]">
+                            <button className="btn btn-sm btn-circle btn-ghost absolute right-2 top-2" onClick={() => setShowRatingsModal(false)}>✕</button>
+                            <h3 className="font-bold text-2xl mb-6 shrink-0">Bewertungen & Status</h3>
+                            
+                            <div className="flex-1 overflow-y-auto pr-2 space-y-8">
+                                {/* Bereich: Beteiligte Personen */}
+                                <div>
+                                    <h4 className="font-bold text-lg mb-3 flex items-center gap-2">
+                                        <span className="iconify mdi--account-group"></span> Beteiligte Personen
+                                    </h4>
+                                    <div className="overflow-x-auto border border-base-300 rounded-box">
+                                        <table className="table table-zebra w-full">
+                                            <thead className="bg-base-200">
+                                                <tr>
+                                                    <th>Name</th>
+                                                    <th>Status</th>
+                                                    <th>Fortschritt</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {ratingStatusData.map(u => (
+                                                    <tr key={u.user_id}>
+                                                        <td className="font-bold">
+                                                            {u.name}
+                                                            {u.email && !u.email.includes('@invite.local') && <span className="block text-xs opacity-70 font-normal">{u.email}</span>}
+                                                            {u.email && u.email.includes('@invite.local') && <span className="block text-xs opacity-50 font-normal">Via Magic Link</span>}
+                                                        </td>
+                                                        <td className="whitespace-nowrap">{u.rated_count} von {totalGalleryPhotos} Bildern</td>
+                                                        <td className="w-1/3 min-w-[100px]">
+                                                            <progress className="progress progress-primary w-full" value={u.rated_count} max={totalGalleryPhotos || 1}></progress>
+                                                        </td>
+                                                    </tr>
+                                                ))}
+                                                {ratingStatusData.length === 0 && (
+                                                    <tr><td colSpan={3} className="text-center py-6 opacity-50">Es sind aktuell keine Personen für diese Galerie freigeschaltet.<br/>Erstelle einen Einladungslink oder weise Nutzer zu, um Gästen Zugriff zu gewähren.</td></tr>
+                                                )}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+
+                                {/* Bereich: Bild-Bewertungen */}
+                                <div>
+                                    <h4 className="font-bold text-lg mb-3 flex items-center gap-2 mt-4">
+                                        <span className="iconify mdi--image-multiple"></span> Detaillierte Auswertungen (Bild-Bewertungen)
+                                    </h4>
+                                    <div className="overflow-x-auto border border-base-300 rounded-box">
+                                        <table className="table table-zebra w-full">
+                                            <thead className="bg-base-200">
+                                                <tr>
+                                                    <th>Bild</th>
+                                                    <th>Dateiname</th>
+                                                    <th>Ø Sterne</th>
+                                                    <th>Kommentare</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {ratingsData.map(r => (
+                                                    <tr key={r.lr_uuid}>
+                                                        <td><img src={r.thumb_url} className="w-12 h-12 object-cover rounded shadow-sm" /></td>
+                                                        <td className="font-mono text-xs">{r.filename}</td>
+                                                        <td className="whitespace-nowrap">{r.avg_rating > 0 ? '⭐'.repeat(r.avg_rating) : <span className="opacity-50">-</span>}</td>
+                                                        <td className="whitespace-pre-wrap text-sm">{r.all_comments || <span className="opacity-50">-</span>}</td>
+                                                    </tr>
+                                                ))}
+                                                {ratingsData.length === 0 && <tr><td colSpan={4} className="text-center py-8 opacity-50">Noch keine Bewertungen vorhanden.</td></tr>}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div className="modal-backdrop" onClick={() => setShowRatingsModal(false)}></div>
+                    </div>
+                )}
+
             </div>
         </PageLayout>
     );
