@@ -18,6 +18,7 @@ export interface GalleryGroup {
     id: number;
     name: string;
     parent_id: number | null;
+    is_public?: boolean | null;
     children?: GalleryGroup[];
     galleries?: Gallery[];
 }
@@ -27,10 +28,10 @@ export interface GalleryTreeResponse {
     root_galleries: Gallery[];
 }
 
-export const flattenGroups = (groups: GalleryGroup[], depth = 0): {id: number, name: string, depth: number}[] => {
-    let flat: {id: number, name: string, depth: number}[] = [];
+export const flattenGroups = (groups: GalleryGroup[], depth = 0): {id: number, name: string, depth: number, is_public: boolean | null}[] => {
+    let flat: {id: number, name: string, depth: number, is_public: boolean | null}[] = [];
     for (const g of groups) {
-        flat.push({ id: g.id, name: g.name, depth });
+        flat.push({ id: g.id, name: g.name, depth, is_public: g.is_public ?? null });
         if (g.children) flat = flat.concat(flattenGroups(g.children, depth + 1));
     }
     return flat;
@@ -45,19 +46,19 @@ export function useProtectedGalleries() {
         fetcher
     );
 
-    const createGroup = async (name: string, parentId?: number | null) => {
+    const createGroup = async (name: string, isPublic: boolean | null, parentId?: number | null) => {
         try {
-            await apiMutate('/api/management/gallery-groups', 'POST', { name, parent_id: parentId });
+            await apiMutate('/api/management/gallery-groups', 'POST', { name, is_public: isPublic, parent_id: parentId });
             await mutate();
         } catch (e) {
             throw new Error('Gruppe konnte nicht erstellt werden.');
         }
     };
 
-    const createGallery = async (name: string, type: 'selection' | 'delivery', isLive: boolean, isPublic: boolean, groupId?: number | null) => {
+    const createGallery = async (name: string, type: 'selection' | 'delivery', isLive: boolean, isPublic: boolean, groupId?: number | null, password?: string, expiresAt?: string) => {
         try {
             await apiMutate('/api/management/galleries', 'POST', { 
-                name, type, is_live: isLive, is_public: isPublic, gallery_group_id: groupId
+                name, type, is_live: isLive, is_public: isPublic, gallery_group_id: groupId, password, expires_at: expiresAt
             });
             await mutate();
         } catch (e) {

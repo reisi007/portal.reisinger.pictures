@@ -3,7 +3,8 @@ export const fetcher = async <T>(url: string): Promise<T> => {
     const res = await fetch(url, {
         headers: {
             'Authorization': token ? "Bearer " + token : '',
-            'Content-Type': 'application/json'
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
         }
     });
     if (!res.ok) throw new Error('API Error');
@@ -16,6 +17,7 @@ export const apiMutate = async <T>(url: string, method: 'POST' | 'PUT' | 'DELETE
         method,
         headers: {
             'Content-Type': 'application/json',
+            'Accept': 'application/json',
             'Authorization': token ? "Bearer " + token : ''
         },
         body: body ? JSON.stringify(body) : undefined

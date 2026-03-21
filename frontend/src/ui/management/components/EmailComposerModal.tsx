@@ -40,7 +40,8 @@ export default function EmailComposerModal({ isOpen, onClose, galleryId, templat
 
     return (
         <div className="modal modal-open">
-            <div className="modal-box max-w-3xl">
+            <div className="modal-box max-w-3xl relative">
+                <button className="btn btn-sm btn-circle btn-ghost absolute right-2 top-2" onClick={onClose}>✕</button>
                 <h3 className="font-bold text-xl mb-4">Nachricht an Kunden senden</h3>
                 
                 <div className="form-control mb-4">
@@ -71,7 +72,7 @@ export default function EmailComposerModal({ isOpen, onClose, galleryId, templat
                     </button>
                 </div>
             </div>
-            <div className="modal-backdrop" onClick={onClose}></div>
+            <div className="modal-backdrop"></div>
         </div>
     );
 }

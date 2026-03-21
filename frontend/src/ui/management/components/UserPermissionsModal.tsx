@@ -37,7 +37,8 @@ export default function UserPermissionsModal({ user, roles, flatGroups, flatGall
 
     return (
         <div className="modal modal-open">
-            <div className="modal-box max-w-4xl">
+            <div className="modal-box max-w-4xl relative">
+                <button className="btn btn-sm btn-circle btn-ghost absolute right-2 top-2" onClick={onClose}>✕</button>
                 <h3 className="font-bold text-2xl mb-1">{user.name} bearbeiten</h3>
                 <p className="opacity-70 text-sm mb-6 flex items-center gap-2">
                     <span className="iconify mdi--email-outline"></span> {user.email}
@@ -87,7 +88,7 @@ export default function UserPermissionsModal({ user, roles, flatGroups, flatGall
                     <button className="btn btn-primary" onClick={handleSave}>Speichern</button>
                 </div>
             </div>
-            <div className="modal-backdrop" onClick={onClose}></div>
+            <div className="modal-backdrop"></div>
         </div>
     );
 }

@@ -88,7 +88,7 @@ return new class extends Migration {
             $table->foreignId('parent_id')->nullable()->constrained('gallery_groups')->onDelete('set null');
             $table->string('name');
             $table->string('slug')->unique();
-            $table->boolean('is_public')->default(false);
+            $table->boolean('is_public')->nullable()->default(null);
             $table->timestamp('created_at')->useCurrent();
         });
 

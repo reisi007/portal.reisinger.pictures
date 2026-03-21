@@ -9,7 +9,7 @@ Das Portal unterscheidet strikt zwischen zwei Nutzertypen:
 1. **Fotografen (Admins):** Loggen sich über `/login` mit E-Mail und Passwort ein, um Galerien zu verwalten.
 2. **Kunden (Gäste):** Erhalten einen individuellen **Magic Link** (`/invite/{token}`). Beim ersten Aufruf identifizieren sie sich einmalig mit Name/E-Mail (und ggf. Passwort) und erhalten danach ein JWT für den direkten Zugriff.
 
-## Lokales Setup (Quickstart mit VS Code)
+## Lokales Setup (Quickstart mit IntelliJ / PhpStorm)
 
 Das lokale Setup ist vollständig in VS Code integriert. Öffne einfach den **Run & Debug** Tab (`Ctrl+Shift+D` oder `Cmd+Shift+D`) in VS Code.
 

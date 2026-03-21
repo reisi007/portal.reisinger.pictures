@@ -1,40 +1,40 @@
 # System Architecture: portal.reisinger.pictures
 
 ## 1. High-Level Components
-* **Frontend (React SPA):** Built with Vite, React, TypeScript, TailwindCSS v4, and DaisyUI.
+* **Frontend (React SPA):** Built with Vite, React, TypeScript, TailwindCSS v4, and DaisyUI. STRICT Separation of Logic (SWR data fetching) and UI (Dumb components).
 * **Backend (Laravel):** Stateless JSON API (JWT Auth). Handles business logic, **on-the-fly zip streaming**, and **synchronous ExifTool injection/thumbnail generation** to keep the infrastructure footprint small (no background queue workers required).
-* **Database (MariaDB):** Managed via native **Laravel Migrations**.
+* **Database (MariaDB):** Managed via native **Laravel Migrations**. Surrogate integer primary keys. (Flyway is deprecated).
 * **Search Engine (Meilisearch):** Typo-tolerant search via Laravel Scout.
 * **Lightroom Plugin (Lua):** Custom plugin with TWO distinct workflows (Selection vs. Delivery).
 
 ## 2. Core Workflows (Selection vs. Delivery)
-The system strictly separates the selection phase (client rating) from the delivery phase (high-res downloads). Ratings are synced back to Lightroom via the API. 
+The system strictly separates the selection phase (client rating) from the delivery phase (high-res downloads). Ratings are synced back to Lightroom via the API.
 
-## 3. Auditing, GDPR & Leak Tracing
-* **Immutable Logs:** Denormalized snapshots (`gallery_name_snapshot`) and `ON DELETE SET NULL` ensure immutable audit trails in `download_logs`. 
+## 3. Security, Auditing & Data Access (CRITICAL)
+* **DAO / API Resources Layer:** The backend MUST NEVER return raw Eloquent models directly to the frontend. Always use Laravel API Resources or Data Transfer Objects (DTOs) for backend communication. This ensures sensitive fields (e.g., `password_hash`) are strictly hidden and not leaked in API responses (Search, Dashboard, etc.).
+* **IDOR Prevention:** Whenever modifying, rating, or reading an object, verify that the authenticated user has explicit access to the *parent* entity (e.g., Gallery).
+* **Immutable Logs & Auditing:** Denormalized snapshots (`gallery_name_snapshot`) and `ON DELETE SET NULL` ensure immutable audit trails in `download_logs`. Unprivileged users are implicitly `pending`.
 * **No IP Tracking:** IP tracking is strictly disabled to comply with GDPR.
-* **Leak Tracing (ExifTool):** During the delivery workflow, the `DownloadController` uses ExifTool to dynamically inject the downloader's name (e.g., "Downloaded by: Maria Muster") into the `SpecialInstructions` IPTC field of the JPEG. This allows tracing leaked images back to the exact client session without relying on visible watermarks.
+* **Leak Tracing (ExifTool):** During the delivery workflow, the `DownloadController` dynamically injects the downloader's name into the `SpecialInstructions` IPTC field of the JPEG. This traces leaked images without visible watermarks.
+* **XSS Prevention:** When using DOM manipulation for 3rd party libraries, database data MUST be escaped or injected safely.
+* **No Blind `firstOrCreate` in Auth:** Never issue a JWT for a user found via `firstOrCreate` on public/invite routes without verifying if they already have a password or admin rights.
 
 ## 4. Search & Indexing (Meilisearch & Scout)
-* **Real-time Synchronization (No Cronjobs):** The search index is updated synchronously without the need for scheduled tasks. Models (`Photo`, `Gallery`) utilize the `Laravel\Scout\Searchable` trait. Whenever an Eloquent model is created, updated, or deleted, Scout automatically hooks into these lifecycle events and pushes the updated payload directly to the Meilisearch REST API.
-* **Configuration:** This real-time push relies on `SCOUT_QUEUE=false` in the configuration.
-* **Filterable Attributes:** We use Meilisearch natively to enforce our robust permission system (`whereIn('gallery_id', [...])`). 
-* **Maintenance & Desyncs:** Manual intervention is only required if the database is modified outside of Eloquent (e.g., direct SQL queries) or when index settings change. In such cases, run `php artisan scout:sync-index-settings` and `php artisan scout:import "App\Models\Photo"` manually.
+* **Real-time Synchronization:** The search index updates synchronously (`SCOUT_QUEUE=false`). Models use the `Laravel\Scout\Searchable` trait.
+* **Tenant Isolation:** We use Meilisearch natively to enforce our robust permission system (`whereIn('gallery_id', [...])`). Filter rules must always be validated to ensure authorized access.
+* **Maintenance:** Run `php artisan scout:sync-index-settings` and `php artisan scout:import "App\Models\Photo"` manually if the DB is modified outside Eloquent.
 
-## 5. Local Development & Storage Paths
-For a clean reset of the development environment (especially on Windows), the following physical paths must be cleared alongside the database reset to prevent orphaned files and cache collisions:
-* **`photos/`**: Contains all uploaded galleries, watermarked copies, and thumbnails (defined via `PHOTO_STORAGE_PATH`).
-* **`ftp/`**: Contains the FTP inbox folders per user (defined via `FTP_STORAGE_PATH`).
-* **`backend/storage/app/private/temp/`**: Temporary files created during ZIP downloads.
-* **`backend/storage/app/private/watermark_master_*.png`**: Cached rasterized watermark files.
-* **`backend/storage/framework/cache/data/`**: Laravel's internal file cache.
+## 5. URL-Driven State & Progressive Role Enhancement
+* **Path & Query Parameters First:** Application state MUST be derived from the URL. Use **Path Parameters** (`/users`) for main views and **Query Parameters** (`?tab=mappings`) for sub-views/filters. Do not use local `useState` for navigation.
+* **Strict Role Separation:** Roles NEVER overlap. `admin` rights do NOT imply `photographer` rights. Admins manage the system, Photographers manage content, Clients view content.
+* **Progressive View Upgrading:** We avoid role-specific routes. An admin visiting `/galleries/wedding-2026` gets the management UI injected, while a client visiting the exact same URL gets the download UI.
 
-*A cross-platform cleanup tool (`clean_dev_storage.mjs`) is provided in the root directory to automate this process.*
+## 6. Component Architecture & UI Rules (React)
+* **Mobile-Friendliness (No Hover-Only):** The visibility of interaction elements (e.g., Edit/Delete buttons on cards or sidebars) MUST NOT be hidden via CSS hover states (`group-hover:opacity-100`). Buttons must be directly visible and usable on touch devices.
+* **Keep Components Small & Focused:** Components should rarely exceed 150 lines. Extract Modals and complex forms into distinct `.tsx` components.
+* **Domain Separation:** Do not mix completely different business domains in one view.
+* **Graceful Degradation & Error Boundaries:** Wrap distinct UI sections in React Error Boundaries (`ErrorBoundary`) so localized bugs or malformed API responses don't crash the entire app.
 
-## 6. URL-Driven State & Progressive Role Enhancement
-* **Path-Based Routing:** The state of the frontend (active views like users, settings, stats) is driven strictly by React Router paths (e.g., `/users`, `/settings`).
-* **Strict Role Separation:** Roles do not overlap. `admin` rights do NOT imply `photographer` rights. A system administrator who also uploads photos MUST have both roles explicitly assigned.
-* **Role Upgrading:** We avoid role-specific routes. An admin visiting `/galleries/wedding-2026` gets the management UI injected, while a client visiting the exact same URL gets the download/rating UI. The view "upgrades" based on the JWT claims.
-
-## 7. Configuration & Environment Variables
-* **No Local `.env` Dependency:** For local development, we strictly avoid relying on a `.env` file. Instead, the application uses default overrides directly within the configuration files (e.g., `config/database.php`). These defaults must always mirror the local Docker setup defined in `docker-compose.local.yml`.
+## 7. Local Development & Storage Paths
+* No local `.env` dependency for development; overrides are in config files mirroring `docker-compose.local.yml`.
+* Use `clean_dev_storage.mjs` to clear: `photos/`, `ftp/`, `backend/storage/app/private/temp/`, `backend/storage/app/private/watermark_master_*.png`, and `backend/storage/framework/cache/data/`.

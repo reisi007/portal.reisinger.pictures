@@ -9,7 +9,9 @@ use App\Models\Photo;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
+use Carbon\Carbon;
 
 class GalleryController extends Controller
 {
@@ -20,7 +22,6 @@ class GalleryController extends Controller
         $tree = Cache::rememberForever('gallery_tree_admin', function () {
             $groups = GalleryGroup::whereNull('parent_id')->with(['children', 'galleries'])->get();
             $rootGalleries = Gallery::whereNull('gallery_group_id')->get();
-            // WICHTIG: Zu Arrays konvertieren, um __PHP_Incomplete_Class_Name beim Deserialisieren zu verhindern
             return [
                 'groups' => $groups->toArray(), 
                 'root_galleries' => $rootGalleries->toArray()
@@ -79,14 +80,23 @@ class GalleryController extends Controller
 
     public function storeGroup(Request $request)
     {
-        $request->validate(['name' => 'required|string|max:255', 'parent_id' => 'nullable|integer|exists:gallery_groups,id']);
+        $request->validate([
+            'name' => 'required|string|max:255', 
+            'parent_id' => 'nullable|integer|exists:gallery_groups,id',
+            'is_public' => 'nullable|boolean'
+        ]);
         
         $slug = Str::slug($request->name);
         if (GalleryGroup::where('slug', $slug)->exists()) {
             $slug = $slug . '-' . time();
         }
         
-        $group = GalleryGroup::create(['name' => $request->name, 'slug' => $slug, 'parent_id' => $request->parent_id]);
+        $group = GalleryGroup::create([
+            'name' => $request->name, 
+            'slug' => $slug, 
+            'parent_id' => $request->parent_id,
+            'is_public' => $request->is_public
+        ]);
         return response()->json(['success' => true, 'group' => $group]);
     }
 
@@ -99,20 +109,36 @@ class GalleryController extends Controller
 
         $request->validate([
             'name' => 'required|string|max:255',
-            'type' => 'nullable|in:selection,delivery',
+            'type' => 'required|in:selection,delivery',
             'gallery_group_id' => 'nullable|integer|exists:gallery_groups,id',
             'is_public' => 'boolean',
+            'is_live' => 'boolean',
+            'password' => 'nullable|string',
+            'expires_at' => 'nullable|date',
         ]);
 
         $slug = Str::slug($request->name);
         if (Gallery::where('slug', $slug)->exists()) $slug = $slug . '-' . time();
 
+        $isPublic = $request->is_public ?? false;
+        
+        // Sichtbarkeit vom Parent erzwingen, falls dort gesetzt
+        if ($request->gallery_group_id) {
+            $group = GalleryGroup::find($request->gallery_group_id);
+            if ($group && !is_null($group->is_public)) {
+                $isPublic = $group->is_public;
+            }
+        }
+
         $gallery = Gallery::create([
             'name' => $request->name,
             'slug' => $slug,
-            'type' => $request->type ?? 'delivery',
-            'is_public' => $request->is_public ?? false,
+            'type' => $request->type,
+            'is_live' => $request->type === 'selection' ? false : ($request->is_live ?? false),
+            'is_public' => $isPublic,
             'gallery_group_id' => $request->gallery_group_id,
+            'password_hash' => $request->password ? Hash::make($request->password) : null,
+            'expires_at' => $request->expires_at ? Carbon::parse($request->expires_at)->endOfDay() : null,
         ]);
 
         if ($user && !$user->is_admin && $user->is_photographer) {
@@ -133,6 +159,19 @@ class GalleryController extends Controller
             'is_public' => 'nullable|boolean',
             'gallery_group_id' => 'nullable|integer|exists:gallery_groups,id',
         ]);
+
+        if (isset($validated['type']) && $validated['type'] === 'selection') {
+            $validated['is_live'] = false;
+        }
+
+        // Vererbung prüfen, falls sich die Gruppe ändert oder das Update is_public überschreiben will
+        $groupIdToCheck = array_key_exists('gallery_group_id', $validated) ? $validated['gallery_group_id'] : $gallery->gallery_group_id;
+        if ($groupIdToCheck) {
+            $group = GalleryGroup::find($groupIdToCheck);
+            if ($group && !is_null($group->is_public)) {
+                $validated['is_public'] = $group->is_public;
+            }
+        }
 
         $gallery->update($validated);
         return response()->json(['success' => true, 'gallery' => $gallery]);

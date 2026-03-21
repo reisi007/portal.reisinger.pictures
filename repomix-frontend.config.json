@@ -1,16 +1,24 @@
 {
     "output": {
         "style": "markdown",
-        "filePath": "repomix-portal.md",
+        "filePath": "repomix-portal-frontend.md",
         "fileSummary": true,
         "directoryStructure": true
     },
+    "include": [
+        "*",
+        ".run/**/*",
+        "deployment/**/*",
+        "frontend/**/*",
+        "backend/**/*"
+    ],
     "ignore": {
         "useGitignore": true,
         "useDefaultPatterns": true,
         "customPatterns": [
             "frontend/node_modules/**",
-            "backend/vendor/**"
+            "backend/vendor/**",
+            "admin.lrplugin/**"
         ]
     }
 }

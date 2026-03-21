@@ -1,0 +1,23 @@
+{
+    "output": {
+        "style": "markdown",
+        "filePath": "repomix-portal-lightroom.md",
+        "fileSummary": true,
+        "directoryStructure": true
+    },
+    "include": [
+        "*",
+        ".run/**/*",
+        "deployment/**/*",
+        "admin.lrplugin/**/*",
+        "backend/**/*"
+    ],
+    "ignore": {
+        "useGitignore": true,
+        "useDefaultPatterns": true,
+        "customPatterns": [
+            "backend/vendor/**",
+            "frontend/**"
+        ]
+    }
+}

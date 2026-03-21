@@ -28,7 +28,8 @@ export default function InviteModal({ galleryId, onClose }: { galleryId: number,
 
     return (
         <div className="modal modal-open">
-            <div className="modal-box">
+            <div className="modal-box relative">
+                <button className="btn btn-sm btn-circle btn-ghost absolute right-2 top-2" onClick={onClose}>✕</button>
                 <h3 className="font-bold text-lg text-primary">Einladungslink generieren</h3>
                 {!link ? (
                     <>
@@ -70,7 +71,7 @@ export default function InviteModal({ galleryId, onClose }: { galleryId: number,
                     </>
                 )}
             </div>
-            <div className="modal-backdrop" onClick={onClose}></div>
+            <div className="modal-backdrop"></div>
         </div>
     );
 }
