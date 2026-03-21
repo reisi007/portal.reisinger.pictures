@@ -72,7 +72,7 @@ services:
       - MAIL_PASSWORD=${MAIL_PASSWORD}
       - MAIL_ENCRYPTION=${MAIL_ENCRYPTION:-tls}
       - MAIL_FROM_ADDRESS=${MAIL_FROM_ADDRESS}
-      - MAIL_FROM_NAME=${MAIL_FROM_NAME:-Reisinger Portal}
+      - MAIL_FROM_NAME=${MAIL_FROM_NAME:-Reisinger Foto Portal}
       - GALLERY_CLEANUP_GRACE_MONTHS=${GALLERY_CLEANUP_GRACE_MONTHS:-3}
     networks:
       - webnet

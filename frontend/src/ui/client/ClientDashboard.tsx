@@ -1,15 +1,15 @@
-import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
-import { useAuth } from '../../logic/useAuth';
-import { useSearch } from '../../logic/useSearch';
+import { useState } from 'react';
+import {Link, useNavigate} from 'react-router-dom';
+import {useAuth} from '../../logic/useAuth';
+import {useSearch} from '../../logic/useSearch';
 import Sidebar from '../components/Sidebar';
 
 export default function ClientDashboard() {
-    const { user } = useAuth();
+    const {user} = useAuth();
     const navigate = useNavigate();
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
-    const { results: searchResults } = useSearch(searchQuery);
+    const {results: searchResults} = useSearch(searchQuery);
 
     if (!user) return null;
 
@@ -24,11 +24,13 @@ export default function ClientDashboard() {
     return (
         <div className="flex h-screen bg-base-100 overflow-hidden relative">
             {isSidebarOpen && (
-                <div className="fixed inset-0 bg-black/50 z-40 md:hidden transition-opacity" onClick={() => setIsSidebarOpen(false)}></div>
+                <div className="fixed inset-0 bg-black/50 z-40 md:hidden transition-opacity"
+                     onClick={() => setIsSidebarOpen(false)}></div>
             )}
 
-            <div className={`fixed inset-y-0 left-0 z-50 w-80 transform transition-transform duration-300 ease-in-out md:relative md:translate-x-0 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
-                <Sidebar onCloseMobile={() => setIsSidebarOpen(false)} />
+            <div
+                className={`fixed inset-y-0 left-0 z-50 w-80 transform transition-transform duration-300 ease-in-out md:relative md:translate-x-0 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+                <Sidebar onCloseMobile={() => setIsSidebarOpen(false)}/>
             </div>
 
             <main className="flex-1 overflow-y-auto flex flex-col w-full relative bg-base-200">
@@ -36,32 +38,36 @@ export default function ClientDashboard() {
                     <button className="btn btn-square btn-ghost md:hidden" onClick={() => setIsSidebarOpen(true)}>
                         <span className="iconify mdi--menu text-2xl"></span>
                     </button>
-                    
+
                     <form onSubmit={handleSearchSubmit} className="relative flex-1 w-full max-w-full md:max-w-4xl">
                         <div className="join w-full shadow-sm">
-                            <input 
-                                type="text" 
-                                placeholder="Bilder durchsuchen..." 
-                                className="input input-bordered join-item w-full" 
-                                value={searchQuery} 
-                                onChange={(e) => setSearchQuery(e.target.value)} 
+                            <input
+                                type="text"
+                                placeholder="Bilder durchsuchen..."
+                                className="input input-bordered join-item w-full"
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
                             />
                             <button type="submit" className="btn btn-primary join-item">
                                 <span className="iconify mdi--magnify text-xl"></span>
                             </button>
                         </div>
-                        
+
                         {searchQuery.length >= 2 && searchResults && (
-                            <div className="absolute top-14 left-0 w-full bg-base-100 shadow-2xl rounded-box border border-base-300 z-50 max-h-[60vh] overflow-y-auto">
+                            <div
+                                className="absolute top-14 left-0 w-full bg-base-100 shadow-2xl rounded-box border border-base-300 z-50 max-h-[60vh] overflow-y-auto">
                                 <ul className="menu p-2">
                                     <li>
-                                        <Link to={`/search?q=${encodeURIComponent(searchQuery.trim())}`} onClick={() => setSearchQuery('')} className="text-primary font-bold">
-                                            <span className="iconify mdi--magnify text-lg mr-1"></span> Suche nach "{searchQuery}"
+                                        <Link to={`/search?q=${encodeURIComponent(searchQuery.trim())}`}
+                                              onClick={() => setSearchQuery('')} className="text-primary font-bold">
+                                            <span className="iconify mdi--magnify text-lg mr-1"></span> Suche nach
+                                            "{searchQuery}"
                                         </Link>
                                     </li>
                                     <div className="divider my-0"></div>
                                     {searchResults.galleries.map(g => (
-                                        <li key={g.id}><Link to={'/' + g.full_path} onClick={() => setSearchQuery('')}>📁 {g.name}</Link></li>
+                                        <li key={g.id}><Link to={'/' + g.full_path}
+                                                             onClick={() => setSearchQuery('')}>📁 {g.name}</Link></li>
                                     ))}
                                     {searchResults.photos.map(p => (
                                         <li key={p.id}><Link to={'/photos/' + p.id} onClick={() => setSearchQuery('')}>
@@ -69,23 +75,28 @@ export default function ClientDashboard() {
                                         </Link></li>
                                     ))}
                                     {searchResults.galleries.length === 0 && searchResults.photos.length === 0 && (
-                                        <li className="disabled"><span className="opacity-50">Keine direkten Treffer</span></li>
+                                        <li className="disabled"><span
+                                            className="opacity-50">Keine direkten Treffer</span></li>
                                     )}
                                 </ul>
                             </div>
                         )}
                     </form>
                 </header>
-                
+
                 <div className="container mx-auto p-8 relative z-0">
                     <h1 className="text-3xl font-bold mb-8">Willkommen zurück, {user.name}!</h1>
-                    {(user as any).my_galleries?.length > 0 ? (
+                    {(user.my_galleries?.length ?? 0) > 0 ? (
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                            {(user as any).my_galleries.map((g: any) => (
-                                <div key={g.id} className="card bg-base-100 shadow-xl cursor-pointer hover:shadow-2xl transition-shadow border border-base-300" onClick={() => navigate('/' + g.full_path)}>
+                            {user.my_galleries?.map((g: { id: number; name: string; full_path: string }) => (
+                                <div key={g.id}
+                                     className="card bg-base-100 shadow-xl cursor-pointer hover:shadow-2xl transition-shadow border border-base-300"
+                                     onClick={() => navigate('/' + g.full_path)}>
                                     <div className="card-body">
-                                        <h2 className="card-title text-primary">{g.type === 'selection' ? '✨ ' : '📦 '} {g.name}</h2>
-                                        <div className="card-actions justify-end mt-4"><button className="btn btn-primary btn-sm">Öffnen</button></div>
+                                        <h2 className="card-title text-primary">{g.name}</h2>
+                                        <div className="card-actions justify-end mt-4">
+                                            <button className="btn btn-primary btn-sm">Öffnen</button>
+                                        </div>
                                     </div>
                                 </div>
                             ))}

@@ -1,5 +1,5 @@
 import useSWR from 'swr';
-import { fetcher, apiMutate } from '../api';
+import {apiMutate, fetcher} from '../api';
 
 export interface FtpStatus {
     ftp_folder: string;
@@ -12,18 +12,18 @@ export interface FtpStatus {
 }
 
 export function useFtp() {
-    const { data: status, mutate, isLoading } = useSWR<FtpStatus>('/api/management/ftp/status', fetcher);
+    const {data: status, mutate, isLoading} = useSWR<FtpStatus>('/api/management/ftp/status', fetcher);
 
     const setTargetGallery = async (gallery_id: number | null) => {
-        await apiMutate('/api/management/ftp/target', 'POST', { gallery_id });
+        await apiMutate('/api/management/ftp/target', 'POST', {gallery_id});
         mutate();
     };
 
     const processInbox = async () => {
-        const data = await apiMutate<any>('/api/management/ftp/process', 'POST');
+        const data = await apiMutate<{ success: boolean, processed: number }>('/api/management/ftp/process', 'POST');
         mutate();
         return data;
     };
 
-    return { status, isLoading, setTargetGallery, processInbox };
+    return {status, isLoading, setTargetGallery, processInbox};
 }

@@ -59,11 +59,28 @@ class StatsController extends Controller
             $domainStats = $this->processDomainStats($rawDomainStats);
         }
 
+        
+            $topGalleries = DB::table('download_logs')
+                ->select('gallery_name_snapshot as name', DB::raw('COUNT(*) as count'))
+                ->when(!$user->is_admin, fn($q) => $q->whereIn('gallery_id', $galleryIds))
+                ->whereNotNull('gallery_name_snapshot')
+                ->groupBy('gallery_name_snapshot')
+                ->orderByDesc('count')->limit(5)->get();
+
+            $topPhotos = DB::table('download_logs')
+                ->select('item_identifier as name', DB::raw('COUNT(*) as count'))
+                ->where('item_type', 'single_image')
+                ->when(!$user->is_admin, fn($q) => $q->whereIn('gallery_id', $galleryIds))
+                ->groupBy('item_identifier')
+                ->orderByDesc('count')->limit(5)->get();
+                
         return response()->json([
             'galleries_count' => $galleriesCount,
             'total_downloads' => $totalDownloads,
             'domain_stats' => $domainStats,
-            'guest_downloads' => $guestDownloads
+            'guest_downloads' => $guestDownloads,
+            'top_galleries' => $topGalleries,
+            'top_photos' => $topPhotos
         ]);
     }
 

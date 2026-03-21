@@ -12,6 +12,11 @@ class Gallery extends Model
 
     public const UPDATED_AT = null;
     
+    protected $visible = [
+        'id', 'gallery_group_id', 'name', 'slug', 'type', 'is_live', 
+        'is_public', 'expires_at', 'created_at', 'full_path', 'photos', 'galleryGroup'
+    ];
+
     protected $fillable = [
         'gallery_group_id',
         'name',

@@ -1,5 +1,5 @@
 import useSWR from 'swr';
-import { fetcher } from '../api';
+import {fetcher} from '../api';
 
 export interface User {
     id: number;
@@ -10,18 +10,19 @@ export interface User {
     is_pending: boolean;
     can_edit_metadata: boolean;
     roles: string[];
+    my_galleries?: { id: number; name: string; full_path: string }[];
 }
 
 export function useAuth() {
-    const { data: user, error, mutate } = useSWR<User>('/api/auth/me', fetcher, {
+    const {data: user, error, mutate} = useSWR<User>('/api/auth/me', fetcher, {
         shouldRetryOnError: false,
     });
 
     const login = async (email: string, password: string): Promise<void> => {
         const response = await fetch('/api/auth/login', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-            body: JSON.stringify({ email, password })
+            headers: {'Content-Type': 'application/json', 'Accept': 'application/json'},
+            body: JSON.stringify({email, password})
         });
         if (!response.ok) throw new Error('Login fehlgeschlagen');
         const data = await response.json();
@@ -32,8 +33,8 @@ export function useAuth() {
     const register = async (name: string, email: string): Promise<string> => {
         const response = await fetch('/api/auth/register', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-            body: JSON.stringify({ name, email })
+            headers: {'Content-Type': 'application/json', 'Accept': 'application/json'},
+            body: JSON.stringify({name, email})
         });
         const data = await response.json();
         if (!response.ok) {
@@ -44,8 +45,8 @@ export function useAuth() {
 
     const logout = (): void => {
         localStorage.removeItem('rp_jwt');
-        mutate(undefined, false);
+        mutate(undefined, { revalidate: false });
     };
 
-    return { user, isLoading: !error && user === undefined, isError: error, login, register, logout };
+    return {user, isLoading: !error && user === undefined, isError: error, login, register, logout};
 }

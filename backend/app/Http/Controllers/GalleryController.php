@@ -81,12 +81,13 @@ class GalleryController extends Controller
     public function storeGroup(Request $request)
     {
         $request->validate([
-            'name' => 'required|string|max:255', 
+            'name' => 'required|string|max:255',
+            'slug' => 'nullable|string|max:255',
             'parent_id' => 'nullable|integer|exists:gallery_groups,id',
             'is_public' => 'nullable|boolean'
         ]);
         
-        $slug = Str::slug($request->name);
+        $slug = $request->slug ? Str::slug($request->slug) : Str::slug($request->name);
         if (GalleryGroup::where('slug', $slug)->exists()) {
             $slug = $slug . '-' . time();
         }
@@ -109,6 +110,7 @@ class GalleryController extends Controller
 
         $request->validate([
             'name' => 'required|string|max:255',
+            'slug' => 'nullable|string|max:255',
             'type' => 'required|in:selection,delivery',
             'gallery_group_id' => 'nullable|integer|exists:gallery_groups,id',
             'is_public' => 'boolean',
@@ -117,7 +119,7 @@ class GalleryController extends Controller
             'expires_at' => 'nullable|date',
         ]);
 
-        $slug = Str::slug($request->name);
+        $slug = $request->slug ? Str::slug($request->slug) : Str::slug($request->name);
         if (Gallery::where('slug', $slug)->exists()) $slug = $slug . '-' . time();
 
         $isPublic = $request->is_public ?? false;
@@ -222,5 +224,51 @@ class GalleryController extends Controller
         }
 
         return response()->json($export);
+    }
+
+
+    public function showGroup($id)
+    {
+        $group = GalleryGroup::with('children')->findOrFail($id);
+        $user = auth('api')->user();
+
+        $groupIds = $this->getAllSubgroupIDs($group);
+        $groupIds[] = $group->id;
+
+        $galleryIds = Gallery::whereIn('gallery_group_id', $groupIds)->pluck('id')->toArray();
+
+        if (!$user->is_admin) {
+            $allowedGalleryIds = $user->galleries()->pluck('galleries.id')->toArray();
+            $galleryIds = array_intersect($galleryIds, $allowedGalleryIds);
+        }
+
+        $photos = Photo::whereIn('gallery_id', $galleryIds)->orderBy('id', 'desc')->paginate(50);
+
+        $photos->getCollection()->transform(function ($photo) {
+            $photo->load('gallery');
+            $baseUrl = '/api/media/' . $photo->gallery->slug;
+            $photo->url = $baseUrl . '/' . $photo->filename;
+            $photo->thumb_url = $baseUrl . '/_thumbs/' . md5($photo->filename . '1024') . '.webp';
+            return $photo;
+        });
+
+        return response()->json([
+            'group' => $group,
+            'downloads_count' => \App\Models\DownloadLog::whereIn('gallery_id', $galleryIds)->count(),
+            'photos' => $photos->items(),
+            'current_page' => $photos->currentPage(),
+            'last_page' => $photos->lastPage(),
+            'total' => $photos->total()
+        ]);
+    }
+
+    private function getAllSubgroupIDs($group)
+    {
+        $ids = [];
+        foreach ($group->children as $child) {
+            $ids[] = $child->id;
+            $ids = array_merge($ids, $this->getAllSubgroupIDs($child));
+        }
+        return $ids;
     }
 }

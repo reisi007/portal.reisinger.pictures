@@ -43,6 +43,7 @@ class GalleryFrontendController extends Controller
 
         return response()->json([
             'gallery' => $gallery,
+            'downloads_count' => \App\Models\DownloadLog::where('gallery_id', $gallery->id)->count(),
             'photos' => $photos->items(),
             'current_page' => $photos->currentPage(),
             'last_page' => $photos->lastPage(),

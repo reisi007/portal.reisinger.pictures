@@ -1,26 +1,55 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
+import {Gallery, GalleryGroup} from '../../logic/useGalleries';
 
 interface GalleryModalsProps {
-    availableGroups: {id: number, name: string, depth: number, is_public: boolean | null}[];
+    availableGroups: { id: number, name: string, depth: number, is_public: boolean | null }[];
     isGroupModalOpen: boolean;
     setGroupModalOpen: (open: boolean) => void;
     isGalleryModalOpen: boolean;
     setGalleryModalOpen: (open: boolean) => void;
-    onCreateGroup: (name: string, isPublic: boolean | null, parentId?: number | null) => Promise<void>;
-    onCreateGallery: (name: string, type: 'selection'|'delivery', isLive: boolean, isPublic: boolean, parentId?: number|null, pw?: string, exp?: string) => Promise<void>;
+
+    editingGroup?: GalleryGroup | null;
+    editingGallery?: Gallery | null;
+
+    onCreateGroup: (name: string, slug: string, isPublic: boolean | null, parentId?: number | null) => Promise<void>;
+    onCreateGallery: (name: string, slug: string, type: 'selection' | 'delivery', isLive: boolean, isPublic: boolean, parentId?: number | null, pw?: string, exp?: string) => Promise<void>;
+    onUpdateGroup: (id: number, name: string, slug: string, isPublic: boolean | null, parentId?: number | null) => Promise<void>;
+    onUpdateGallery: (id: number, name: string, slug: string, type: 'selection' | 'delivery', isLive: boolean, isPublic: boolean, parentId?: number | null, pw?: string, exp?: string) => Promise<void>;
+    onDeleteGroup: (id: number) => Promise<void>;
+    onDeleteGallery: (id: number) => Promise<void>;
 }
 
-export default function GalleryModals({ availableGroups, isGroupModalOpen, setGroupModalOpen, isGalleryModalOpen, setGalleryModalOpen, onCreateGroup, onCreateGallery }: GalleryModalsProps) {
-    // Flow State
+export default function GalleryModals({
+                                          availableGroups,
+                                          isGroupModalOpen,
+                                          setGroupModalOpen,
+                                          isGalleryModalOpen,
+                                          setGalleryModalOpen,
+                                          editingGroup,
+                                          editingGallery,
+                                          onCreateGroup,
+                                          onCreateGallery,
+                                          onUpdateGroup,
+                                          onUpdateGallery,
+                                          onDeleteGroup,
+                                          onDeleteGallery
+                                      }: GalleryModalsProps) {
     const [returnToGallery, setReturnToGallery] = useState(false);
+    const [processing, setProcessing] = useState(false);
+
+    const toSlug = (text: string) => text.toLowerCase().replace(/ä/g, 'ae').replace(/ö/g, 'oe').replace(/ü/g, 'ue').replace(/ß/g, 'ss').replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
 
     // Group State
     const [newGroupName, setNewGroupName] = useState('');
-    const [newGroupIsPublic, setNewGroupIsPublic] = useState<'null'|'true'|'false'>('null');
+    const [newGroupSlug, setNewGroupSlug] = useState('');
+    const [groupSlugEdited, setGroupSlugEdited] = useState(false);
+    const [newGroupIsPublic, setNewGroupIsPublic] = useState<'null' | 'true' | 'false'>('null');
     const [groupParentId, setGroupParentId] = useState<number | ''>('');
 
     // Gallery State
     const [newGalleryName, setNewGalleryName] = useState('');
+    const [newGallerySlug, setNewGallerySlug] = useState('');
+    const [gallerySlugEdited, setGallerySlugEdited] = useState(false);
     const [newGalleryType, setNewGalleryType] = useState<'selection' | 'delivery'>('delivery');
     const [newGalleryIsPublic, setNewGalleryIsPublic] = useState(false);
     const [newGalleryIsLive, setNewGalleryIsLive] = useState(false);
@@ -28,46 +57,117 @@ export default function GalleryModals({ availableGroups, isGroupModalOpen, setGr
     const [newGalleryPassword, setNewGalleryPassword] = useState('');
     const [newGalleryExpiresAt, setNewGalleryExpiresAt] = useState('');
 
+    // Sync Edit States via Render Phase Update
+    const [prevGroupState, setPrevGroupState] = useState({
+        open: false,
+        group: undefined as GalleryGroup | null | undefined
+    });
+    if (isGroupModalOpen !== prevGroupState.open || editingGroup !== prevGroupState.group) {
+        setPrevGroupState({open: isGroupModalOpen, group: editingGroup});
+        if (isGroupModalOpen) {
+            if (editingGroup) {
+                setNewGroupName(editingGroup.name);
+                setNewGroupSlug(editingGroup.slug || '');
+                setGroupSlugEdited(true);
+                setNewGroupIsPublic(editingGroup.is_public === null ? 'null' : (editingGroup.is_public ? 'true' : 'false'));
+                setGroupParentId(editingGroup.parent_id || '');
+            } else {
+                setNewGroupName('');
+                setNewGroupSlug('');
+                setGroupSlugEdited(false);
+                setNewGroupIsPublic('null');
+                setGroupParentId('');
+            }
+        }
+    }
+
+    const [prevGalleryState, setPrevGalleryState] = useState({
+        open: false,
+        gallery: undefined as Gallery | null | undefined
+    });
+    if (isGalleryModalOpen !== prevGalleryState.open || editingGallery !== prevGalleryState.gallery) {
+        setPrevGalleryState({open: isGalleryModalOpen, gallery: editingGallery});
+        if (isGalleryModalOpen) {
+            if (editingGallery) {
+                setNewGalleryName(editingGallery.name);
+                setNewGallerySlug(editingGallery.slug || '');
+                setGallerySlugEdited(true);
+                setNewGalleryType(editingGallery.type);
+                setNewGalleryIsPublic(editingGallery.is_public);
+                setNewGalleryIsLive(editingGallery.is_live);
+                setGalleryParentId(editingGallery.gallery_group_id || '');
+                setNewGalleryPassword(''); // pw is hidden, so empty
+                setNewGalleryExpiresAt(editingGallery.expires_at ? editingGallery.expires_at.split('T')[0] : '');
+            } else {
+                setNewGalleryName('');
+                setNewGallerySlug('');
+                setGallerySlugEdited(false);
+                setNewGalleryType('delivery');
+                setNewGalleryIsPublic(false);
+                setNewGalleryIsLive(false);
+                setGalleryParentId('');
+                setNewGalleryPassword('');
+                setNewGalleryExpiresAt('');
+            }
+        }
+    }
+
+    const handleGroupNameChange = (val: string) => {
+        setNewGroupName(val);
+        if (!groupSlugEdited) setNewGroupSlug(toSlug(val));
+    };
+
+    const handleGalleryNameChange = (val: string) => {
+        setNewGalleryName(val);
+        if (!gallerySlugEdited) setNewGallerySlug(toSlug(val));
+    };
+
     const closeGroupModal = () => {
-        setGroupModalOpen(false); 
-        if(returnToGallery) { 
-            setGalleryModalOpen(true); 
-            setReturnToGallery(false); 
+        setGroupModalOpen(false);
+        if (returnToGallery) {
+            setGalleryModalOpen(true);
+            setReturnToGallery(false);
         }
     };
 
     const handleGroupSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!newGroupName.trim()) return;
-        
+        setProcessing(true);
         const isPub = newGroupIsPublic === 'null' ? null : newGroupIsPublic === 'true';
-        await onCreateGroup(newGroupName, isPub, groupParentId === '' ? null : Number(groupParentId));
-        
-        setNewGroupName(''); 
-        setGroupParentId(''); 
-        setNewGroupIsPublic('null');
-        closeGroupModal();
+        try {
+            if (editingGroup) {
+                await onUpdateGroup(editingGroup.id, newGroupName, newGroupSlug, isPub, groupParentId === '' ? null : Number(groupParentId));
+            } else {
+                await onCreateGroup(newGroupName, newGroupSlug, isPub, groupParentId === '' ? null : Number(groupParentId));
+            }
+            closeGroupModal();
+        } catch {
+            alert('Fehler beim Speichern');
+        }
+        setProcessing(false);
     };
 
     const handleGallerySubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!newGalleryName.trim()) return;
-        await onCreateGallery(newGalleryName, newGalleryType, newGalleryIsLive, newGalleryIsPublic, galleryParentId === '' ? null : Number(galleryParentId), newGalleryPassword, newGalleryExpiresAt);
-        setNewGalleryName(''); 
-        setNewGalleryType('delivery'); 
-        setNewGalleryIsPublic(false);
-        setNewGalleryIsLive(false); 
-        setGalleryParentId(''); 
-        setNewGalleryPassword(''); 
-        setNewGalleryExpiresAt(''); 
-        setGalleryModalOpen(false);
+        setProcessing(true);
+        try {
+            if (editingGallery) {
+                await onUpdateGallery(editingGallery.id, newGalleryName, newGallerySlug, newGalleryType, newGalleryIsLive, newGalleryIsPublic, galleryParentId === '' ? null : Number(galleryParentId), newGalleryPassword, newGalleryExpiresAt);
+            } else {
+                await onCreateGallery(newGalleryName, newGallerySlug, newGalleryType, newGalleryIsLive, newGalleryIsPublic, galleryParentId === '' ? null : Number(galleryParentId), newGalleryPassword, newGalleryExpiresAt);
+            }
+            setGalleryModalOpen(false);
+        } catch {
+            alert('Fehler beim Speichern');
+        }
+        setProcessing(false);
     };
 
     const handleTypeChange = (val: 'selection' | 'delivery') => {
         setNewGalleryType(val);
-        if (val === 'selection') {
-            setNewGalleryIsLive(false);
-        }
+        if (val === 'selection') setNewGalleryIsLive(false);
     };
 
     const selectedParent = availableGroups.find(g => g.id === (galleryParentId === '' ? null : Number(galleryParentId)));
@@ -76,20 +176,34 @@ export default function GalleryModals({ availableGroups, isGroupModalOpen, setGr
 
     return (
         <>
-            {/* Modal: Neue Meta-Galerie */}
             <dialog className={`modal ${isGroupModalOpen ? 'modal-open' : ''}`}>
                 <div className="modal-box relative">
-                    <button className="btn btn-sm btn-circle btn-ghost absolute right-2 top-2" onClick={closeGroupModal}>✕</button>
-                    <h3 className="font-bold text-lg mb-4">Neue Meta-Galerie erstellen</h3>
+                    <button className="btn btn-sm btn-circle btn-ghost absolute right-2 top-2"
+                            onClick={closeGroupModal}>✕
+                    </button>
+                    <h3 className="font-bold text-lg mb-4">{editingGroup ? 'Meta-Galerie bearbeiten' : 'Neue Meta-Galerie erstellen'}</h3>
                     <form onSubmit={handleGroupSubmit}>
-                        <div className="form-control w-full mb-4">
-                            <label className="label"><span className="label-text font-bold">Name der Meta-Galerie</span></label>
-                            <input type="text" required value={newGroupName} onChange={e => setNewGroupName(e.target.value)} className="input input-bordered w-full" />
+                        <div className="flex flex-col md:flex-row gap-4 mb-4">
+                            <div className="form-control w-full md:w-1/2">
+                                <label className="label"><span className="label-text font-bold">Name</span></label>
+                                <input type="text" required value={newGroupName}
+                                       onChange={e => handleGroupNameChange(e.target.value)}
+                                       className="input input-bordered w-full"/>
+                            </div>
+                            <div className="form-control w-full md:w-1/2">
+                                <label className="label"><span className="label-text font-bold">URL Slug</span></label>
+                                <input type="text" value={newGroupSlug} onChange={e => {
+                                    setNewGroupSlug(toSlug(e.target.value));
+                                    setGroupSlugEdited(true);
+                                }} className="input input-bordered w-full text-sm font-mono"/>
+                            </div>
                         </div>
-                        
+
                         <div className="form-control w-full mb-4">
                             <label className="label"><span className="label-text font-bold">Sichtbarkeits-Vorgabe</span></label>
-                            <select value={newGroupIsPublic} onChange={e => setNewGroupIsPublic(e.target.value as any)} className="select select-bordered w-full">
+                            <select value={newGroupIsPublic}
+                                    onChange={e => setNewGroupIsPublic(e.target.value as 'null' | 'true' | 'false')}
+                                    className="select select-bordered w-full">
                                 <option value="null">Keine Vorgabe (Unterordner entscheiden selbst)</option>
                                 <option value="false">Privat erzwingen (Nur mit Link / Passwort)</option>
                                 <option value="true">Öffentlich erzwingen (Für alle sichtbar)</option>
@@ -97,79 +211,129 @@ export default function GalleryModals({ availableGroups, isGroupModalOpen, setGr
                         </div>
 
                         <div className="form-control w-full mb-6">
-                            <label className="label"><span className="label-text font-bold">Übergeordnete Meta-Galerie</span></label>
-                            <select value={groupParentId} onChange={e => setGroupParentId(e.target.value ? Number(e.target.value) : '')} className="select select-bordered w-full">
+                            <label className="label"><span
+                                className="label-text font-bold">Übergeordnete Meta-Galerie</span></label>
+                            <select value={groupParentId}
+                                    onChange={e => setGroupParentId(e.target.value ? Number(e.target.value) : '')}
+                                    className="select select-bordered w-full">
                                 <option value="">-- Keine --</option>
-                                {availableGroups.map(g => <option key={g.id} value={g.id}>{'- '.repeat(g.depth)}{g.name}</option>)}
+                                {availableGroups.filter(g => g.id !== editingGroup?.id).map(g => <option key={g.id}
+                                                                                                         value={g.id}>{'- '.repeat(g.depth)}{g.name}</option>)}
                             </select>
                         </div>
-                        <div className="modal-action">
-                            <button type="button" className="btn btn-ghost" onClick={closeGroupModal}>Abbrechen</button>
-                            <button type="submit" className="btn btn-primary">Erstellen</button>
+                        <div className="modal-action flex justify-between">
+                            {editingGroup ? (
+                                <button type="button" className="btn btn-outline btn-error" onClick={async () => {
+                                    if (window.confirm('Diese Meta-Galerie wirklich löschen? ACHTUNG: Alle Unterordner werden dabei in die Root-Ebene verschoben!')) {
+                                        setProcessing(true);
+                                        await onDeleteGroup(editingGroup.id);
+                                        setProcessing(false);
+                                        closeGroupModal();
+                                    }
+                                }}>Löschen</button>
+                            ) : <div></div>}
+                            <div>
+                                <button type="button" className="btn btn-ghost mr-2"
+                                        onClick={closeGroupModal}>Abbrechen
+                                </button>
+                                <button type="submit" className="btn btn-primary" disabled={processing}>{processing ?
+                                    <span className="loading loading-spinner"></span> : 'Speichern'}</button>
+                            </div>
                         </div>
                     </form>
                 </div>
                 <div className="modal-backdrop"></div>
             </dialog>
 
-            {/* Modal: Neue Galerie */}
             <dialog className={`modal ${isGalleryModalOpen ? 'modal-open' : ''}`}>
                 <div className="modal-box max-w-2xl relative">
-                    <button className="btn btn-sm btn-circle btn-ghost absolute right-2 top-2" onClick={() => setGalleryModalOpen(false)}>✕</button>
+                    <button className="btn btn-sm btn-circle btn-ghost absolute right-2 top-2"
+                            onClick={() => setGalleryModalOpen(false)}>✕
+                    </button>
                     <div className="flex justify-between items-center mb-6 mr-8">
-                        <h3 className="font-bold text-lg">Neue Galerie erstellen</h3>
-                        <button type="button" className="btn btn-xs btn-outline" onClick={() => { setGalleryModalOpen(false); setReturnToGallery(true); setGroupModalOpen(true); }}>
-                            Ordner / Meta-Galerie erstellen
-                        </button>
+                        <h3 className="font-bold text-lg">{editingGallery ? 'Galerie bearbeiten' : 'Neue Galerie erstellen'}</h3>
+                        {!editingGallery && (
+                            <button type="button" className="btn btn-xs btn-outline" onClick={() => {
+                                setGalleryModalOpen(false);
+                                setReturnToGallery(true);
+                                setGroupModalOpen(true);
+                            }}>
+                                Ordner / Meta-Galerie erstellen
+                            </button>
+                        )}
                     </div>
 
                     <form onSubmit={handleGallerySubmit}>
-                        <div className="form-control w-full mb-4">
-                            <label className="label"><span className="label-text font-bold">Name der Galerie</span></label>
-                            <input type="text" required value={newGalleryName} onChange={e => setNewGalleryName(e.target.value)} className="input input-bordered w-full" />
-                        </div>
-                        
                         <div className="flex flex-col md:flex-row gap-4 mb-4">
                             <div className="form-control w-full md:w-1/2">
-                                <label className="label"><span className="label-text font-bold">Galerie-Typ</span></label>
-                                <select required value={newGalleryType} onChange={e => handleTypeChange(e.target.value as 'selection'|'delivery')} className="select select-bordered w-full">
+                                <label className="label"><span className="label-text font-bold">Name der Galerie</span></label>
+                                <input type="text" required value={newGalleryName}
+                                       onChange={e => handleGalleryNameChange(e.target.value)}
+                                       className="input input-bordered w-full"/>
+                            </div>
+                            <div className="form-control w-full md:w-1/2">
+                                <label className="label"><span className="label-text font-bold">URL Slug</span></label>
+                                <input type="text" value={newGallerySlug} onChange={e => {
+                                    setNewGallerySlug(toSlug(e.target.value));
+                                    setGallerySlugEdited(true);
+                                }} className="input input-bordered w-full text-sm font-mono"/>
+                            </div>
+                        </div>
+
+                        <div className="flex flex-col md:flex-row gap-4 mb-4">
+                            <div className="form-control w-full md:w-1/2">
+                                <label className="label"><span
+                                    className="label-text font-bold">Galerie-Typ</span></label>
+                                <select required value={newGalleryType}
+                                        onChange={e => handleTypeChange(e.target.value as 'selection' | 'delivery')}
+                                        className="select select-bordered w-full">
                                     <option value="delivery">Delivery (Downloads)</option>
                                     <option value="selection">Auswahl (Ratings)</option>
                                 </select>
                             </div>
                             <div className="form-control w-full md:w-1/2">
-                                <label className="label">
-                                    <span className="label-text font-bold">Sichtbarkeit</span>
-                                    {isVisibilityForced && <span className="label-text-alt text-warning">Wird durch Meta-Galerie erzwungen</span>}
-                                </label>
-                                <select 
-                                    required 
+                                <label className="label"><span
+                                    className="label-text font-bold">Sichtbarkeit</span></label>
+                                <select
+                                    required
                                     disabled={isVisibilityForced}
-                                    value={isVisibilityForced ? (forcedVisibility ? 'true' : 'false') : (newGalleryIsPublic ? 'true' : 'false')} 
-                                    onChange={e => setNewGalleryIsPublic(e.target.value === 'true')} 
+                                    value={isVisibilityForced ? (forcedVisibility ? 'true' : 'false') : (newGalleryIsPublic ? 'true' : 'false')}
+                                    onChange={e => setNewGalleryIsPublic(e.target.value === 'true')}
                                     className="select select-bordered w-full"
                                 >
                                     <option value="false">Privat (Nur mit Link / Passwort)</option>
                                     <option value="true">Öffentlich (Für alle sichtbar)</option>
                                 </select>
+                                {isVisibilityForced && (
+                                    <label className="label pt-1 pb-0">
+                                        <span
+                                            className="label-text-alt text-warning leading-tight whitespace-normal break-words">Wird durch Meta-Galerie erzwungen</span>
+                                    </label>
+                                )}
                             </div>
                         </div>
 
                         <div className="form-control w-full mb-4">
                             <label className="label"><span className="label-text font-bold">In welchem Ordner soll die Galerie liegen?</span></label>
-                            <select value={galleryParentId} onChange={e => setGalleryParentId(e.target.value ? Number(e.target.value) : '')} className="select select-bordered w-full">
+                            <select value={galleryParentId}
+                                    onChange={e => setGalleryParentId(e.target.value ? Number(e.target.value) : '')}
+                                    className="select select-bordered w-full">
                                 <option value="">-- Oberste Ebene (Root) --</option>
-                                {availableGroups.map(g => <option key={g.id} value={g.id}>{'- '.repeat(g.depth)}{g.name}</option>)}
+                                {availableGroups.map(g => <option key={g.id}
+                                                                  value={g.id}>{'- '.repeat(g.depth)}{g.name}</option>)}
                             </select>
                         </div>
 
                         {newGalleryType === 'delivery' && (
                             <div className="form-control w-full mb-4">
                                 <label className="cursor-pointer label justify-start gap-4 bg-base-200 p-3 rounded-box">
-                                    <input type="checkbox" checked={newGalleryIsLive} onChange={e => setNewGalleryIsLive(e.target.checked)} className="checkbox checkbox-error" />
+                                    <input type="checkbox" checked={newGalleryIsLive}
+                                           onChange={e => setNewGalleryIsLive(e.target.checked)}
+                                           className="checkbox checkbox-error"/>
                                     <div>
                                         <span className="label-text font-bold block">LIVE Galerie</span>
-                                        <span className="label-text-alt opacity-70">Die Galerie aktualisiert sich für Besucher automatisch alle 10s.</span>
+                                        <span
+                                            className="label-text-alt opacity-70 whitespace-normal break-words leading-tight inline-block mt-1">Die Galerie aktualisiert sich für Besucher automatisch alle 10s.</span>
                                     </div>
                                 </label>
                             </div>
@@ -177,18 +341,42 @@ export default function GalleryModals({ availableGroups, isGroupModalOpen, setGr
 
                         <div className="flex flex-col md:flex-row gap-4 mb-6">
                             <div className="form-control w-full md:w-1/2">
-                                <label className="label"><span className="label-text font-bold">Passwort</span></label>
-                                <input type="text" value={newGalleryPassword} onChange={e => setNewGalleryPassword(e.target.value)} className="input input-bordered w-full" placeholder="Leer = Nur Magic Link" />
+                                <label className="label">
+                                    <span className="label-text font-bold">Passwort</span>
+                                    {editingGallery && <span
+                                        className="label-text-alt opacity-70 whitespace-normal break-words leading-tight inline-block mt-1">Nur eintragen, um altes zu überschreiben</span>}
+                                </label>
+                                <input type="text" value={newGalleryPassword}
+                                       onChange={e => setNewGalleryPassword(e.target.value)}
+                                       className="input input-bordered w-full" placeholder="Leer = Nur Magic Link"/>
                             </div>
                             <div className="form-control w-full md:w-1/2">
-                                <label className="label"><span className="label-text font-bold">Ablaufdatum</span></label>
-                                <input type="date" value={newGalleryExpiresAt} onChange={e => setNewGalleryExpiresAt(e.target.value)} className="input input-bordered w-full" />
+                                <label className="label"><span
+                                    className="label-text font-bold">Ablaufdatum</span></label>
+                                <input type="date" value={newGalleryExpiresAt}
+                                       onChange={e => setNewGalleryExpiresAt(e.target.value)}
+                                       className="input input-bordered w-full"/>
                             </div>
                         </div>
 
-                        <div className="modal-action">
-                            <button type="button" className="btn btn-ghost" onClick={() => setGalleryModalOpen(false)}>Abbrechen</button>
-                            <button type="submit" className="btn btn-primary">Galerie erstellen</button>
+                        <div className="modal-action flex justify-between">
+                            {editingGallery ? (
+                                <button type="button" className="btn btn-outline btn-error" onClick={async () => {
+                                    if (window.confirm('Diese Galerie inklusive aller Bilder wirklich löschen? Dieser Schritt kann nicht rückgängig gemacht werden!')) {
+                                        setProcessing(true);
+                                        await onDeleteGallery(editingGallery.id);
+                                        setProcessing(false);
+                                        setGalleryModalOpen(false);
+                                    }
+                                }}>Löschen</button>
+                            ) : <div></div>}
+                            <div>
+                                <button type="button" className="btn btn-ghost mr-2"
+                                        onClick={() => setGalleryModalOpen(false)}>Abbrechen
+                                </button>
+                                <button type="submit" className="btn btn-primary" disabled={processing}>{processing ?
+                                    <span className="loading loading-spinner"></span> : 'Speichern'}</button>
+                            </div>
                         </div>
                     </form>
                 </div>

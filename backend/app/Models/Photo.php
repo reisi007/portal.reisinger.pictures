@@ -11,6 +11,12 @@ class Photo extends Model
 
     public const UPDATED_AT = null;
 
+    protected $visible = [
+        'id', 'gallery_id', 'filename', 'lr_uuid', 'width', 'height', 
+        'title', 'description', 'artist', 'created_at', 'url', 'thumb_url', 
+        'rating', 'comment', 'gallery'
+    ];
+
     protected $fillable = [
         'gallery_id',
         'filename',

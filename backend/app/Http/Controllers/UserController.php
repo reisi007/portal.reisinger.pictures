@@ -14,7 +14,7 @@ class UserController extends Controller
 {
     public function index()
     {
-        return User::with(['roles', 'galleryGroups', 'galleries'])->get();
+        return \App\Http\Resources\UserResource::collection(User::with(['roles', 'galleryGroups', 'galleries'])->get());
     }
 
     public function roles()
@@ -59,7 +59,7 @@ class UserController extends Controller
             $msg->to($user->email)->subject('Dein neuer Account');
         });
 
-        return response()->json(['success' => true, 'user' => $user]);
+        return response()->json(['success' => true, 'user' => new \App\Http\Resources\UserResource($user)]);
     }
 
     public function update(Request $request, $id)

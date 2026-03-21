@@ -13,6 +13,12 @@ class User extends Authenticatable implements JWTSubject
 
     public const UPDATED_AT = null;
 
+    protected $visible = [
+        'id', 'name', 'email', 'metadata_copyright', 'can_edit_metadata', 
+        'current_ftp_gallery_id', 'created_at', 'is_admin', 'is_photographer', 
+        'is_pending', 'roles', 'galleryGroups', 'galleries', 'currentFtpGallery'
+    ];
+
     protected $fillable = [
         'name',
         'email',

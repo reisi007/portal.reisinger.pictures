@@ -2,14 +2,13 @@
 
 ## Offene Punkte
 
-### Backend & API
-- [ ] Implementierung: Validierung der Meilisearch-Filterregeln für berechtigten Zugriff auf Fotos im Such-Controller sicherstellen.
-- [ ] Implementierung: Einzigartigkeit von Galerie-Namen sicherstellen (Namen müssen auf der gleichen Ebene / mit dem gleichen `parent_id` unique sein).
-- [ ] Refactoring (Security): Alle bestehenden API-Endpoints prüfen und auf API Resources / DTOs umstellen, um sicherzustellen, dass `password_hash` nirgends geleakt wird. (siehe Architekturregel)
-- [ ] Die Einhaltung der Architekturregeln im Gesamten Code überprüfen
+### Frontend
+- [ ] **Refactoring**: Reuse types in properties in the Props of the React hooks to make them more human readable and maintainable.
 
-### Frontend (UI/UX)
-- [ ] UI-Update: Sidebar Bearbeiten-Dialog für Meta-Galerien und normale Galerien direkt aus der Seitenleiste ermöglichen.
-- [ ] UI-Update: Löschen-Button in den Bearbeiten-Dialog verschieben (statt ihn direkt in der Sidebar-Zeile zu haben).
-- [ ] Feature: Button in Sidebar hinzufügen, um eine Meta-Galerie zu öffnen (Ansicht, die alle Fotos aus allen darunterliegenden Sub-Galerien gesammelt anzeigt).
-- [ ] Refactoring (Mobile): CSS-Hover-Klassen (`group-hover:opacity-100`) von allen bestehenden Aktions-Buttons (Karten, Sidebar) entfernen, um Touch-Bedienbarkeit zu gewährleisten.
+### Backend & Datenbank
+- [ ] **Feature (Low Prio)**: Lokaler Toggle (z.B. .env oder UI) implementieren, um die rechenintensive Bildverarbeitung (Imagick/ExifTool) für schnelles lokales Testen zu deaktivieren.
+- [ ] **Rechtemanagement (Privat)**: Sichtbarkeit für private Galerien strikt auf Fotografen und explizit eingeladene Nutzer (Rollen-/User-Basis) beschränken.
+- [ ] **Rechtemanagement (Domains)**: Fotografen können private Galerien für alle Nutzer einer bestimmten (bereits bekannten) E-Mail-Domain freigeben.
+- [ ] **Metadaten-Berechtigungen (Kunden)**: Das Bearbeiten von Metadaten durch Kunden muss pro Galerie explizit erlaubt werden.
+- [ ] **Metadaten-Berechtigungen (Fotografen)**: Fotografen dürfen in Galerien, auf die sie Zugriff haben, Metadaten ändern. Das Feld "Urheber" (Artist) bleibt read-only.
+- [ ] **Feature**: Backend-Endpoint für die "Sammelansicht" einer Meta-Galerie (Alle Fotos der Sub-Galerien) implementieren, da der UI-Button jetzt existiert.

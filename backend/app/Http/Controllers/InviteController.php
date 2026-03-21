@@ -122,4 +122,23 @@ class InviteController extends Controller
             'full_path' => $gallery->full_path
         ]);
     }
+
+    public function index($galleryId)
+    {
+        return response()->json(\App\Models\GalleryInvite::where('gallery_id', $galleryId)->orderBy('id', 'desc')->get());
+    }
+
+    public function update(Request $request, $id)
+    {
+        $request->validate(['name' => 'nullable|string|max:255']);
+        $invite = \App\Models\GalleryInvite::findOrFail($id);
+        $invite->update(['name' => $request->name]);
+        return response()->json(['success' => true]);
+    }
+
+    public function destroy($id)
+    {
+        \App\Models\GalleryInvite::destroy($id);
+        return response()->json(['success' => true]);
+    }
 }

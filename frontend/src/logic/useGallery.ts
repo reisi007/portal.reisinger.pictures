@@ -1,6 +1,6 @@
 import useSWRInfinite from 'swr/infinite';
-import { fetcher } from '../api';
-import { Gallery } from './useGalleries';
+import {fetcher} from '../api';
+import {Gallery} from './useGalleries';
 
 export interface Photo {
     id: number;
@@ -13,6 +13,10 @@ export interface Photo {
     thumb_url: string;
     rating: number;
     comment: string;
+    gallery?: Gallery;
+    title?: string;
+    description?: string;
+    artist?: string;
 }
 
 export interface PaginatedGalleryResponse {
@@ -21,6 +25,7 @@ export interface PaginatedGalleryResponse {
     current_page: number;
     last_page: number;
     total: number;
+    downloads_count: number;
 }
 
 export function useGallery(slug: string | undefined) {
@@ -30,7 +35,7 @@ export function useGallery(slug: string | undefined) {
         return "/api/galleries/" + slug + "?page=" + (pageIndex + 1);
     };
 
-    const { data, error, isLoading, size, setSize, mutate } = useSWRInfinite<PaginatedGalleryResponse>(
+    const {data, error, isLoading, size, setSize, mutate} = useSWRInfinite<PaginatedGalleryResponse>(
         getKey,
         fetcher,
         {
@@ -43,7 +48,7 @@ export function useGallery(slug: string | undefined) {
 
     const photos = data ? data.flatMap(page => page.photos) : [];
     const gallery = data?.[0]?.gallery;
-    
+
     const isReachingEnd = data && data[data.length - 1]?.current_page >= data[data.length - 1]?.last_page;
     const totalPhotos = data?.[0]?.total || 0;
 
@@ -51,19 +56,19 @@ export function useGallery(slug: string | undefined) {
         if (data) {
             const newData = data.map(page => ({
                 ...page,
-                photos: page.photos.map(p => p.id === photoId ? { ...p, rating, comment } : p)
+                photos: page.photos.map(p => p.id === photoId ? {...p, rating, comment} : p)
             }));
-            mutate(newData, false);
+            mutate(newData, { revalidate: false });
         }
 
         const res = await fetch("/api/photos/" + photoId + "/rate", {
             method: 'POST',
-            headers: { 
+            headers: {
                 'Content-Type': 'application/json',
                 'Accept': 'application/json',
                 'Authorization': 'Bearer ' + (localStorage.getItem('rp_jwt') || '')
             },
-            body: JSON.stringify({ rating, comment })
+            body: JSON.stringify({rating, comment})
         });
 
         if (res.status === 401) {
@@ -76,9 +81,22 @@ export function useGallery(slug: string | undefined) {
             mutate(); // Optimistic Update verwerfen
             return;
         }
-        
-        mutate(); 
+
+        mutate();
     };
 
-    return { gallery, photos, totalPhotos, isLoading, isError: error, ratePhoto, size, setSize, isReachingEnd };
+    const downloadsCount = data?.[0]?.downloads_count || 0;
+    return {
+        gallery,
+        photos,
+        downloadsCount,
+        totalPhotos,
+        isLoading,
+        isError: error,
+        ratePhoto,
+        size,
+        setSize,
+        isReachingEnd,
+        mutate
+    };
 }
