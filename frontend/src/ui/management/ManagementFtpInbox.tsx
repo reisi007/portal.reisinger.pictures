@@ -1,10 +1,10 @@
-import React, { useState } from 'react';
-import { useFtp } from '../../logic/useFtp';
-import { useProtectedGalleries } from '../../logic/useGalleries';
+import { useState } from 'react';
+import {useFtp} from '../../logic/useFtp';
+import {useProtectedGalleries} from '../../logic/useGalleries';
 
 export default function ManagementFtpInbox() {
-    const { status, isLoading, setTargetGallery, processInbox } = useFtp();
-    const { tree } = useProtectedGalleries();
+    const {status, isLoading, setTargetGallery, processInbox} = useFtp();
+    const {tree} = useProtectedGalleries();
     const [selectedId, setSelectedId] = useState<number | ''>('');
     const [processing, setProcessing] = useState(false);
 
@@ -57,17 +57,25 @@ export default function ManagementFtpInbox() {
                     <div className="flex-1 w-full">
                         <label className="label"><span className="label-text">Aktuelle Ziel-Galerie</span></label>
                         {status.current_target_gallery ? (
-                            <div className="alert alert-info shadow-sm p-3">
+                            <div
+                                className="flex items-center bg-base-100 border border-base-300 rounded-box p-3 shadow-sm">
                                 <span>{status.current_target_gallery.name}</span>
-                                <button className="btn btn-xs btn-ghost ml-auto" onClick={() => setTargetGallery(null)}>Ändern</button>
+                                <button
+                                    className="btn btn-xs btn-circle btn-ghost ml-auto text-base-content/70 hover:text-error"
+                                    title="Zuordnung aufheben" onClick={() => setTargetGallery(null)}><span
+                                    className="iconify mdi--close text-lg"></span></button>
                             </div>
                         ) : (
                             <div className="flex gap-2">
-                                <select value={selectedId} onChange={e => setSelectedId(e.target.value ? Number(e.target.value) : '')} className="select select-bordered flex-1">
+                                <select value={selectedId}
+                                        onChange={e => setSelectedId(e.target.value ? Number(e.target.value) : '')}
+                                        className="select select-bordered flex-1">
                                     <option value="">-- Ziel-Galerie auswählen --</option>
                                     {flatGalleries.map(g => <option key={g.id} value={g.id}>{g.name}</option>)}
                                 </select>
-                                <button onClick={handleSetTarget} disabled={selectedId === ''} className="btn btn-secondary">Setzen</button>
+                                <button onClick={handleSetTarget} disabled={selectedId === ''}
+                                        className="btn btn-secondary">Setzen
+                                </button>
                             </div>
                         )}
                     </div>

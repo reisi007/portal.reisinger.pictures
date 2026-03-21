@@ -1,22 +1,30 @@
-import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import {useState} from 'react';
+import {useNavigate, useParams} from 'react-router-dom';
 import useSWR from 'swr';
-import { fetcher } from '../api';
-import { Photo } from './logic/useGallery';
-import { useAuth } from '../logic/useAuth';
-import { usePhoto } from '../logic/usePhoto';
+import {fetcher} from '../api';
+import {Photo} from '../logic/useGallery';
+import {useAuth} from '../logic/useAuth';
+import {usePhoto} from '../logic/usePhoto';
 import PageLayout from './components/PageLayout';
 
-interface Breadcrumb { name: string; type: 'group' | 'gallery'; full_path?: string; }
-interface PhotoContextData { photo: Photo; breadcrumbs: Breadcrumb[]; }
+interface Breadcrumb {
+    name: string;
+    type: 'group' | 'gallery';
+    full_path?: string;
+}
+
+interface PhotoContextData {
+    photo: Photo;
+    breadcrumbs: Breadcrumb[];
+}
 
 export default function PhotoDetailView() {
-    const { id } = useParams<{ id: string }>();
+    const {id} = useParams<{ id: string }>();
     const navigate = useNavigate();
-    const { user } = useAuth();
-    const { updateMetadata, deletePhoto } = usePhoto();
+    const {user} = useAuth();
+    const {updateMetadata, deletePhoto} = usePhoto();
 
-    const { data, error, isLoading, mutate } = useSWR<PhotoContextData>(
+    const {data, error, isLoading, mutate} = useSWR<PhotoContextData>(
         id ? '/api/photos/' + id + '/context' : null, fetcher
     );
 
@@ -25,18 +33,24 @@ export default function PhotoDetailView() {
     const [artist, setArtist] = useState('');
     const [saving, setSaving] = useState(false);
 
-    useEffect(() => {
-        if (data?.photo) {
-            setTitle(data.photo.title || '');
-            setDesc(data.photo.description || '');
-            setArtist(data.photo.artist || '');
-        }
-    }, [data?.photo]);
+    const [prevPhoto, setPrevPhoto] = useState<Photo | null>(null);
 
-    if (isLoading) return <PageLayout><div className="flex h-full items-center justify-center"><span className="loading loading-spinner loading-lg"></span></div></PageLayout>;
-    if (error || !data) return <PageLayout><div className="p-8 text-center text-error">Foto konnte nicht geladen werden oder keine Berechtigung.</div></PageLayout>;
+    if (data?.photo && data.photo !== prevPhoto) {
+        setPrevPhoto(data.photo);
+        setTitle(data.photo.title || '');
+        setDesc(data.photo.description || '');
+        setArtist(data.photo.artist || '');
+    }
 
-    const { photo, breadcrumbs } = data;
+    if (isLoading) return <PageLayout>
+        <div className="flex h-full items-center justify-center"><span
+            className="loading loading-spinner loading-lg"></span></div>
+    </PageLayout>;
+    if (error || !data) return <PageLayout>
+        <div className="p-8 text-center text-error">Foto konnte nicht geladen werden oder keine Berechtigung.</div>
+    </PageLayout>;
+
+    const {photo, breadcrumbs} = data;
     const canEdit = user?.is_admin || user?.can_edit_metadata;
 
     const handleSaveMeta = async () => {
@@ -44,7 +58,9 @@ export default function PhotoDetailView() {
         try {
             await updateMetadata(photo.id, title, desc, user?.is_admin ? artist : undefined);
             mutate();
-        } catch (e) { alert('Fehler beim Speichern'); }
+        } catch {
+            alert('Fehler beim Speichern');
+        }
         setSaving(false);
     };
 
@@ -53,7 +69,9 @@ export default function PhotoDetailView() {
         try {
             await deletePhoto(photo.id);
             navigate(-1);
-        } catch(e) { alert('Fehler beim Löschen'); }
+        } catch {
+            alert('Fehler beim Löschen');
+        }
     };
 
     return (
@@ -70,7 +88,8 @@ export default function PhotoDetailView() {
                                 {breadcrumbs.map((bc, idx) => (
                                     <li key={idx}>
                                         {bc.type === 'gallery' && bc.full_path
-                                            ? <a onClick={() => navigate('/' + bc.full_path)} className="font-semibold text-primary">{bc.name}</a>
+                                            ? <a onClick={() => navigate('/' + bc.full_path)}
+                                                 className="font-semibold text-primary">{bc.name}</a>
                                             : <span className="opacity-70">{bc.name}</span>
                                         }
                                     </li>
@@ -80,8 +99,10 @@ export default function PhotoDetailView() {
                         </div>
                     </div>
 
-                    <div className="flex-1 bg-base-200 rounded-box flex flex-col items-center justify-center p-4 relative overflow-hidden shadow-inner">
-                        <img src={photo.url} alt={photo.filename} className="max-w-full max-h-full object-contain rounded drop-shadow-2xl" />
+                    <div
+                        className="flex-1 bg-base-200 rounded-box flex flex-col items-center justify-center p-4 relative overflow-hidden shadow-inner">
+                        <img src={photo.url} alt={photo.filename}
+                             className="max-w-full max-h-full object-contain rounded drop-shadow-2xl"/>
                     </div>
                 </div>
 
@@ -93,28 +114,42 @@ export default function PhotoDetailView() {
                                 <div className="space-y-4">
                                     <div className="form-control">
                                         <label className="label"><span className="label-text">Titel</span></label>
-                                        <input type="text" value={title} onChange={e=>setTitle(e.target.value)} className="input input-sm input-bordered" />
+                                        <input type="text" value={title} onChange={e => setTitle(e.target.value)}
+                                               className="input input-sm input-bordered"/>
                                     </div>
                                     <div className="form-control">
-                                        <label className="label"><span className="label-text">Beschreibung</span></label>
-                                        <textarea value={desc} onChange={e=>setDesc(e.target.value)} className="textarea textarea-bordered textarea-sm h-24"></textarea>
+                                        <label className="label"><span
+                                            className="label-text">Beschreibung</span></label>
+                                        <textarea value={desc} onChange={e => setDesc(e.target.value)}
+                                                  className="textarea textarea-bordered textarea-sm h-24"></textarea>
                                     </div>
                                     {user?.is_admin && (
                                         <div className="form-control">
-                                            <label className="label"><span className="label-text">Fotograf / Copyright</span></label>
-                                            <input type="text" value={artist} onChange={e=>setArtist(e.target.value)} className="input input-sm input-bordered" />
+                                            <label className="label"><span
+                                                className="label-text">Fotograf / Copyright</span></label>
+                                            <input type="text" value={artist} onChange={e => setArtist(e.target.value)}
+                                                   className="input input-sm input-bordered"/>
                                         </div>
                                     )}
-                                    {!user?.is_admin && <div className="text-xs opacity-70 mt-2">Fotograf: {artist || 'Unbekannt'}</div>}
-                                    <button onClick={handleSaveMeta} disabled={saving} className="btn btn-primary btn-sm w-full mt-4">
-                                        {saving ? <span className="loading loading-spinner"></span> : 'In Datenbank & Datei speichern'}
+                                    {!user?.is_admin && <div
+                                        className="text-xs opacity-70 mt-2">Fotograf: {artist || 'Unbekannt'}</div>}
+                                    <button onClick={handleSaveMeta} disabled={saving}
+                                            className="btn btn-primary btn-sm w-full mt-4">
+                                        {saving ? <span
+                                            className="loading loading-spinner"></span> : 'In Datenbank & Datei speichern'}
                                     </button>
                                 </div>
                             ) : (
                                 <div className="space-y-4 text-sm">
-                                    <div><span className="font-bold block text-xs opacity-70">Titel</span>{photo.title || '-'}</div>
-                                    <div><span className="font-bold block text-xs opacity-70">Beschreibung</span>{photo.description || '-'}</div>
-                                    <div><span className="font-bold block text-xs opacity-70">Fotograf</span>{photo.artist || '-'}</div>
+                                    <div><span
+                                        className="font-bold block text-xs opacity-70">Titel</span>{photo.title || '-'}
+                                    </div>
+                                    <div><span
+                                        className="font-bold block text-xs opacity-70">Beschreibung</span>{photo.description || '-'}
+                                    </div>
+                                    <div><span
+                                        className="font-bold block text-xs opacity-70">Fotograf</span>{photo.artist || '-'}
+                                    </div>
                                 </div>
                             )}
                         </div>
@@ -126,7 +161,8 @@ export default function PhotoDetailView() {
                     </div>
 
                     {user?.is_admin && (
-                        <button onClick={handleDelete} className="btn btn-outline btn-error w-full mt-auto mb-4 md:mb-0">
+                        <button onClick={handleDelete}
+                                className="btn btn-outline btn-error w-full mt-auto mb-4 md:mb-0">
                             <span className="iconify mdi--trash-can"></span> Bild löschen
                         </button>
                     )}

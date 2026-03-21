@@ -1,4 +1,4 @@
-import React, { Component, ErrorInfo, ReactNode } from 'react';
+import { Component, ErrorInfo, ReactNode } from 'react';
 
 interface Props {
     children?: ReactNode;
@@ -17,7 +17,7 @@ export default class ErrorBoundary extends Component<Props, State> {
     };
 
     public static getDerivedStateFromError(error: Error): State {
-        return { hasError: true, error };
+        return {hasError: true, error};
     }
 
     public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
@@ -27,7 +27,7 @@ export default class ErrorBoundary extends Component<Props, State> {
     public render() {
         if (this.state.hasError) {
             if (this.props.fallback) return this.props.fallback;
-            
+
             return (
                 <div className="p-4 m-4 border border-error bg-error/10 rounded-box text-error">
                     <h2 className="font-bold text-lg mb-2 flex items-center gap-2">
@@ -36,9 +36,9 @@ export default class ErrorBoundary extends Component<Props, State> {
                     <p className="text-sm font-mono break-all mb-4 opacity-80">
                         {this.state.error?.message || 'Unbekannter Fehler'}
                     </p>
-                    <button 
-                        className="btn btn-sm btn-outline btn-error" 
-                        onClick={() => this.setState({ hasError: false, error: null })}
+                    <button
+                        className="btn btn-sm btn-outline btn-error"
+                        onClick={() => this.setState({hasError: false, error: null})}
                     >
                         Erneut versuchen
                     </button>

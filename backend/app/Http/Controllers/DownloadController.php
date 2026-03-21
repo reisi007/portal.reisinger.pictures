@@ -36,7 +36,7 @@ class DownloadController extends Controller
         copy($sourcePath, $tempPath);
 
         // FIX: Korrekter String für den Trim-Befehl ohne Syntax-Fehler
-        $artist = trim($photo->artist ?? config('app.name', 'Reisinger Portal'), "\"\'");
+        $artist = trim($photo->artist ?? config('app.name', 'Reisinger Foto Portal'), "\"\'");
         $copyright = 'Copyright ' . date('Y') . ' ' . $artist;
         $instructions = 'Licensed to / Downloaded by: ' . $userName;
 

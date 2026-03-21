@@ -1,9 +1,13 @@
-import { mutate } from 'swr';
-import { apiMutate } from '../api';
+import {mutate} from 'swr';
+import {apiMutate} from '../api';
 
 export function usePhoto() {
     const updateMetadata = async (id: number, title: string, description: string, artist?: string) => {
-        const data = await apiMutate<any>(`/api/photos/${id}/meta`, 'PUT', { title, description, artist });
+        const data = await apiMutate<{ success: boolean }>(`/api/photos/${id}/meta`, 'PUT', {
+            title,
+            description,
+            artist
+        });
         mutate(key => typeof key === 'string' && key.includes('/api/galleries/'));
         return data;
     };
@@ -13,5 +17,5 @@ export function usePhoto() {
         mutate(key => typeof key === 'string' && key.includes('/api/galleries/'));
     };
 
-    return { updateMetadata, deletePhoto };
+    return {updateMetadata, deletePhoto};
 }

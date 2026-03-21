@@ -1,23 +1,23 @@
-import React, { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import {useNavigate, useParams} from 'react-router-dom';
 import PageLayout from './components/PageLayout';
 
 export default function InviteView() {
-    const { token } = useParams<{ token: string }>();
+    const {token} = useParams<{ token: string }>();
     const navigate = useNavigate();
-    
+
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
     const [galleryName, setGalleryName] = useState('');
     const [requiresPassword, setRequiresPassword] = useState(false);
     const [inviteName, setInviteName] = useState('');
-    
+
     const [name, setName] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
 
     useEffect(() => {
-        fetch('/api/invites/' + token, { headers: { 'Accept': 'application/json' } })
+        fetch('/api/invites/' + token, {headers: {'Accept': 'application/json'}})
             .then(res => {
                 if (!res.ok) throw new Error('Dieser Einladungslink ist ungültig oder abgelaufen.');
                 return res.json();
@@ -29,7 +29,7 @@ export default function InviteView() {
                 setLoading(false);
             })
             .catch(err => {
-                setError(err.message);
+                setError(err instanceof Error ? (err as Error).message : String(err));
                 setLoading(false);
             });
     }, [token]);
@@ -37,26 +37,29 @@ export default function InviteView() {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError('');
-        
+
         try {
             const res = await fetch('/api/invites/redeem', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-                body: JSON.stringify({ token, name, email, password })
+                headers: {'Content-Type': 'application/json', 'Accept': 'application/json'},
+                body: JSON.stringify({token, name, email, password})
             });
-            
+
             const data = await res.json();
             if (!res.ok) throw new Error(data.error || 'Fehler beim Beitritt.');
-            
+
             localStorage.setItem('rp_jwt', data.access_token);
-            navigate('/' + data.full_path, { replace: true });
-        } catch (err: any) {
-            setError(err.message);
+            navigate('/' + data.full_path, {replace: true});
+        } catch (err: unknown) {
+            setError((err as Error).message);
         }
     };
 
-    if (loading) return <PageLayout><div className="flex h-full items-center justify-center"><span className="loading loading-spinner loading-lg text-primary"></span></div></PageLayout>;
-    
+    if (loading) return <PageLayout>
+        <div className="flex h-full items-center justify-center"><span
+            className="loading loading-spinner loading-lg text-primary"></span></div>
+    </PageLayout>;
+
     if (error && !galleryName) return (
         <PageLayout>
             <div className="flex h-full items-center justify-center p-4">
@@ -75,39 +78,50 @@ export default function InviteView() {
                     <div className="card-body">
                         <h2 className="card-title text-2xl mb-1">Willkommen zur Fotoauswahl</h2>
                         <p className="text-base-content/70 mb-6">Galerie: <strong>{galleryName}</strong></p>
-                        
+
                         {error && <div className="alert alert-error text-sm py-2 mb-4">{error}</div>}
-                        
+
                         {inviteName && !requiresPassword ? (
                             <div className="form-control mt-4">
-                                <button onClick={handleSubmit} className="btn btn-primary w-full text-lg">Weiter als {inviteName}</button>
+                                <button onClick={handleSubmit} className="btn btn-primary w-full text-lg">Weiter
+                                    als {inviteName}</button>
                             </div>
                         ) : (
                             <form onSubmit={handleSubmit} className="space-y-4">
                                 {!inviteName && (
                                     <>
                                         <div className="form-control">
-                                            <label className="label"><span className="label-text font-bold">Dein Name</span></label>
-                                            <input type="text" required value={name} onChange={e => setName(e.target.value)} className="input input-bordered" placeholder="z.B. Maria Muster" />
+                                            <label className="label"><span
+                                                className="label-text font-bold">Dein Name</span></label>
+                                            <input type="text" required value={name}
+                                                   onChange={e => setName(e.target.value)}
+                                                   className="input input-bordered" placeholder="z.B. Maria Muster"/>
                                         </div>
                                         <div className="form-control">
-                                            <label className="label"><span className="label-text font-bold">Deine E-Mail</span></label>
-                                            <input type="email" required value={email} onChange={e => setEmail(e.target.value)} className="input input-bordered" placeholder="maria@beispiel.de" />
+                                            <label className="label"><span
+                                                className="label-text font-bold">Deine E-Mail</span></label>
+                                            <input type="email" required value={email}
+                                                   onChange={e => setEmail(e.target.value)}
+                                                   className="input input-bordered" placeholder="maria@beispiel.de"/>
                                         </div>
                                     </>
                                 )}
-                                
+
                                 {inviteName && requiresPassword && (
-                                    <p className="text-sm opacity-70">Hallo <strong>{inviteName}</strong>, bitte gib das Galerie-Passwort ein.</p>
+                                    <p className="text-sm opacity-70">Hallo <strong>{inviteName}</strong>, bitte gib das
+                                        Galerie-Passwort ein.</p>
                                 )}
 
                                 {requiresPassword && (
                                     <div className="form-control pt-2">
-                                        <label className="label"><span className="label-text font-bold text-warning">Galerie-Passwort</span></label>
-                                        <input type="password" required value={password} onChange={e => setPassword(e.target.value)} className="input input-bordered input-warning" />
+                                        <label className="label"><span
+                                            className="label-text font-bold text-warning">Galerie-Passwort</span></label>
+                                        <input type="password" required value={password}
+                                               onChange={e => setPassword(e.target.value)}
+                                               className="input input-bordered input-warning"/>
                                     </div>
                                 )}
-                                
+
                                 <div className="form-control mt-6">
                                     <button type="submit" className="btn btn-primary w-full text-lg">
                                         {inviteName ? `Weiter als ${inviteName}` : 'Galerie öffnen'}

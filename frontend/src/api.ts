@@ -11,7 +11,7 @@ export const fetcher = async <T>(url: string): Promise<T> => {
     return res.json() as Promise<T>;
 };
 
-export const apiMutate = async <T>(url: string, method: 'POST' | 'PUT' | 'DELETE', body?: any): Promise<T> => {
+export const apiMutate = async <T>(url: string, method: 'POST' | 'PUT' | 'DELETE', body?: unknown): Promise<T> => {
     const token = localStorage.getItem('rp_jwt');
     const res = await fetch(url, {
         method,

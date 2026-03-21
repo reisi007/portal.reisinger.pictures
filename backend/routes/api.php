@@ -56,9 +56,13 @@ Route::middleware(['auth:api', 'management'])->group(function () {
     Route::post('/management/galleries', [GalleryController::class, 'storeGallery']);
     Route::put('/management/galleries/{id}', [GalleryController::class, 'updateGallery']);
     Route::delete('/management/galleries/{id}', [GalleryController::class, 'destroyGallery']);
+    Route::get('/management/gallery-groups/{id}', [GalleryController::class, 'showGroup']);
     Route::get('/management/galleries/{id}/export', [GalleryController::class, 'exportRatings']);
     
+    Route::get('/management/galleries/{id}/invites', [InviteController::class, 'index']);
     Route::post('/management/galleries/{id}/invites', [InviteController::class, 'generate']);
+    Route::put('/management/invites/{id}', [InviteController::class, 'update']);
+    Route::delete('/management/invites/{id}', [InviteController::class, 'destroy']);
     Route::post('/management/galleries/{id}/invites/send', [InviteController::class, 'sendEmail']);
     Route::post('/management/upload', [ImageController::class, 'upload']);
     Route::post('/management/galleries/{id}/send-custom-email', [MailController::class, 'sendCustom']);

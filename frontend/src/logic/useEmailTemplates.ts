@@ -1,5 +1,5 @@
 import useSWR from 'swr';
-import { fetcher, apiMutate } from '../api';
+import {apiMutate, fetcher} from '../api';
 
 export interface EmailTemplate {
     id: number;
@@ -9,7 +9,7 @@ export interface EmailTemplate {
 }
 
 export function useEmailTemplates() {
-    const { data: templates, mutate, isLoading } = useSWR<EmailTemplate[]>('/api/management/email-templates', fetcher);
+    const {data: templates, mutate, isLoading} = useSWR<EmailTemplate[]>('/api/management/email-templates', fetcher);
 
     const saveTemplate = async (template: Partial<EmailTemplate>) => {
         const isNew = !template.id;
@@ -23,5 +23,5 @@ export function useEmailTemplates() {
         mutate();
     };
 
-    return { templates, isLoading, saveTemplate, deleteTemplate };
+    return {templates, isLoading, saveTemplate, deleteTemplate};
 }

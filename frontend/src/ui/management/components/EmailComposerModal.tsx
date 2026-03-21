@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
-import { EmailTemplate } from '../../../logic/useEmailTemplates';
-import { apiMutate } from '../../../api';
+import { useState } from 'react';
+import {EmailTemplate} from '../../../logic/useEmailTemplates';
+import {apiMutate} from '../../../api';
 
 interface EmailComposerModalProps {
     isOpen: boolean;
@@ -9,7 +9,7 @@ interface EmailComposerModalProps {
     templates?: EmailTemplate[];
 }
 
-export default function EmailComposerModal({ isOpen, onClose, galleryId, templates }: EmailComposerModalProps) {
+export default function EmailComposerModal({isOpen, onClose, galleryId, templates}: EmailComposerModalProps) {
     const [mailSubject, setMailSubject] = useState('');
     const [mailBody, setMailBody] = useState('');
     const [sendingMail, setSendingMail] = useState(false);
@@ -29,11 +29,17 @@ export default function EmailComposerModal({ isOpen, onClose, galleryId, templat
         if (!galleryId || !mailSubject || !mailBody) return;
         setSendingMail(true);
         try {
-            const data = await apiMutate<{success: boolean, notified_count: number}>(`/api/management/galleries/${galleryId}/send-custom-email`, 'POST', { subject: mailSubject, body: mailBody });
+            const data = await apiMutate<{
+                success: boolean,
+                notified_count: number
+            }>(`/api/management/galleries/${galleryId}/send-custom-email`, 'POST', {
+                subject: mailSubject,
+                body: mailBody
+            });
             alert('Erfolg! ' + data.notified_count + ' E-Mails versendet.');
             onClose();
-        } catch(err: any) { 
-            alert('Fehler: ' + err.message); 
+        } catch (err: unknown) {
+            alert('Fehler: ' + (err instanceof Error ? (err as Error).message : 'Unknown error'));
         }
         setSendingMail(false);
     };
@@ -43,10 +49,11 @@ export default function EmailComposerModal({ isOpen, onClose, galleryId, templat
             <div className="modal-box max-w-3xl relative">
                 <button className="btn btn-sm btn-circle btn-ghost absolute right-2 top-2" onClick={onClose}>✕</button>
                 <h3 className="font-bold text-xl mb-4">Nachricht an Kunden senden</h3>
-                
+
                 <div className="form-control mb-4">
                     <label className="label"><span className="label-text font-bold">Vorlage auswählen</span></label>
-                    <select onChange={e => handleTemplateSelect(e.target.value)} className="select select-bordered w-full">
+                    <select onChange={e => handleTemplateSelect(e.target.value)}
+                            className="select select-bordered w-full">
                         <option value="">-- Bitte wählen --</option>
                         {templates?.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
                     </select>
@@ -54,20 +61,24 @@ export default function EmailComposerModal({ isOpen, onClose, galleryId, templat
 
                 <div className="form-control mb-4">
                     <label className="label"><span className="label-text font-bold">Betreff</span></label>
-                    <input type="text" value={mailSubject} onChange={e => setMailSubject(e.target.value)} className="input input-bordered w-full" />
+                    <input type="text" value={mailSubject} onChange={e => setMailSubject(e.target.value)}
+                           className="input input-bordered w-full"/>
                 </div>
 
                 <div className="form-control mb-6">
                     <label className="label">
                         <span className="label-text font-bold">Nachricht (HTML erlaubt)</span>
-                        <span className="label-text-alt opacity-70">Variablen: {"{user_name}"}, {"{gallery_name}"}, {"{link}"}</span>
+                        <span
+                            className="label-text-alt opacity-70 whitespace-normal break-words leading-tight inline-block mt-1">Variablen: {"{user_name}"}, {"{gallery_name}"}, {"{link}"}</span>
                     </label>
-                    <textarea value={mailBody} onChange={e => setMailBody(e.target.value)} className="textarea textarea-bordered h-48 font-mono text-sm"></textarea>
+                    <textarea value={mailBody} onChange={e => setMailBody(e.target.value)}
+                              className="textarea textarea-bordered h-48 font-mono text-sm"></textarea>
                 </div>
 
                 <div className="modal-action">
                     <button className="btn btn-ghost" onClick={onClose}>Abbrechen</button>
-                    <button className="btn btn-primary" disabled={sendingMail || !mailSubject || !mailBody} onClick={handleSendCustomMail}>
+                    <button className="btn btn-primary" disabled={sendingMail || !mailSubject || !mailBody}
+                            onClick={handleSendCustomMail}>
                         {sendingMail ? <span className="loading loading-spinner"></span> : 'Nachricht Senden'}
                     </button>
                 </div>
