@@ -27,8 +27,9 @@ return [
     */
     'meilisearch' => [
         'host' => env('MEILISEARCH_HOST', 'http://localhost:7700'),
-        'key' => env('MEILISEARCH_KEY', null),
-        
+        // Fallback passend zur docker-compose.local.yml gesetzt:
+        'key' => env('MEILISEARCH_KEY', 'local_meili_secret'),
+
         // WICHTIG: Damit whereIn() in Scout funktioniert, müssen wir Meilisearch mitteilen,
         // welche Attribute filterbar sind.
         'index-settings' => [

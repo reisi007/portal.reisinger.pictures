@@ -20,7 +20,7 @@ export function useAuth() {
     const login = async (email: string, password: string): Promise<void> => {
         const response = await fetch('/api/auth/login', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
             body: JSON.stringify({ email, password })
         });
         if (!response.ok) throw new Error('Login fehlgeschlagen');
@@ -32,7 +32,7 @@ export function useAuth() {
     const register = async (name: string, email: string): Promise<string> => {
         const response = await fetch('/api/auth/register', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
             body: JSON.stringify({ name, email })
         });
         const data = await response.json();

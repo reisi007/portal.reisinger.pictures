@@ -23,7 +23,7 @@ export function useSettings() {
         const token = localStorage.getItem('rp_jwt');
         await fetch('/api/management/settings/watermark', {
             method: 'POST',
-            headers: { 'Authorization': `Bearer ${token}` },
+            headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/json' },
             body: formData
         });
         mutate();

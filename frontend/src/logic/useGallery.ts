@@ -60,6 +60,7 @@ export function useGallery(slug: string | undefined) {
             method: 'POST',
             headers: { 
                 'Content-Type': 'application/json',
+                'Accept': 'application/json',
                 'Authorization': 'Bearer ' + (localStorage.getItem('rp_jwt') || '')
             },
             body: JSON.stringify({ rating, comment })

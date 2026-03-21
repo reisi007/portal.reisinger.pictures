@@ -17,7 +17,7 @@ export default function InviteView() {
     const [password, setPassword] = useState('');
 
     useEffect(() => {
-        fetch('/api/invites/' + token)
+        fetch('/api/invites/' + token, { headers: { 'Accept': 'application/json' } })
             .then(res => {
                 if (!res.ok) throw new Error('Dieser Einladungslink ist ungültig oder abgelaufen.');
                 return res.json();
@@ -41,7 +41,7 @@ export default function InviteView() {
         try {
             const res = await fetch('/api/invites/redeem', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
                 body: JSON.stringify({ token, name, email, password })
             });
             

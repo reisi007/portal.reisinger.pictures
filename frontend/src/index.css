@@ -93,9 +93,7 @@
         @apply iconify;
     }
 
-    /* * UI-Fix: Dezentere Fokus-Rahmen für alle Formularfelder.
-     * Überschreibt das klobige Standard-Verhalten von DaisyUI (2px Breite + 2px Offset).
-     */
+    /* UI-Fix: Dezentere Fokus-Rahmen für alle Formularfelder. */
     .input:focus,
     .input:focus-within,
     .textarea:focus,
@@ -109,5 +107,11 @@
 
     .label {
         @apply mb-0.5;
+    }
+
+    /* Automatisches Sternchen für Pflichtfelder */
+    .form-control:has(input[required], select[required], textarea[required]) .label-text::after {
+        content: " *";
+        @apply text-primary font-bold;
     }
 }

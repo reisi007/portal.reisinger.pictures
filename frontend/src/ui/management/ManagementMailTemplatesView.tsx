@@ -40,7 +40,8 @@ export default function ManagementMailTemplatesView() {
 
             {editing && (
                 <div className="modal modal-open">
-                    <div className="modal-box max-w-3xl">
+                    <div className="modal-box max-w-3xl relative">
+                        <button className="btn btn-sm btn-circle btn-ghost absolute right-2 top-2" onClick={() => setEditing(null)}>✕</button>
                         <h3 className="font-bold text-xl mb-4">{editing.id ? 'Vorlage bearbeiten' : 'Neue Vorlage erstellen'}</h3>
                         <form onSubmit={handleSave} className="space-y-4">
                             <div className="form-control">
@@ -64,7 +65,7 @@ export default function ManagementMailTemplatesView() {
                             </div>
                         </form>
                     </div>
-                    <div className="modal-backdrop" onClick={() => setEditing(null)}></div>
+                    <div className="modal-backdrop"></div>
                 </div>
             )}
         </div>

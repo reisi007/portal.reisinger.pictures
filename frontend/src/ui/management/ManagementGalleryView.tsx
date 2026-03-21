@@ -40,7 +40,12 @@ export default function ManagementGalleryView() {
             formData.append('file', file);
             try {
                 await fetch('/api/management/upload', {
-                    method: 'POST', headers: { 'Authorization': 'Bearer ' + (localStorage.getItem('rp_jwt') || '') }, body: formData
+                    method: 'POST', 
+                    headers: { 
+                        'Authorization': 'Bearer ' + (localStorage.getItem('rp_jwt') || ''),
+                        'Accept': 'application/json'
+                    }, 
+                    body: formData
                 });
             } catch (err) {}
         }

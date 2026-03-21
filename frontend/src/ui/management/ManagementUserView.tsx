@@ -9,14 +9,12 @@ export default function ManagementUserView() {
     const { users, roles, mappings, createUser, updateUser, createMapping, deleteMapping } = useUsers();
     const { tree } = useProtectedGalleries();
     
-    // URL-Driven State für Tabs
     const [searchParams, setSearchParams] = useSearchParams();
     const activeTab = searchParams.get('tab') || 'users';
     
     const [editingUser, setEditingUser] = useState<UserDetailed | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
     
-    // Create User State
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
     const [newName, setNewName] = useState('');
     const [newEmail, setNewEmail] = useState('');
@@ -59,7 +57,6 @@ export default function ManagementUserView() {
             </div>
 
             <div className="tabs tabs-box">
-                {/* Tab 1: Benutzerverwaltung */}
                 <input 
                     type="radio" 
                     name="management_user_tabs" 
@@ -121,7 +118,6 @@ export default function ManagementUserView() {
                     </div>
                 </div>
 
-                {/* Tab 2: Domain-Mappings */}
                 <input 
                     type="radio" 
                     name="management_user_tabs" 
@@ -152,7 +148,8 @@ export default function ManagementUserView() {
 
             {isCreateModalOpen && (
                 <div className="modal modal-open">
-                    <div className="modal-box">
+                    <div className="modal-box relative">
+                        <button className="btn btn-sm btn-circle btn-ghost absolute right-2 top-2" onClick={() => setIsCreateModalOpen(false)}>✕</button>
                         <h3 className="font-bold text-lg mb-4">Neuen Nutzer einladen</h3>
                         <p className="text-sm opacity-70 mb-4">Der Nutzer erhält eine E-Mail mit einem Link, um sein Passwort festzulegen.</p>
                         <form onSubmit={handleCreateUser} className="space-y-4">
@@ -172,7 +169,7 @@ export default function ManagementUserView() {
                             </div>
                         </form>
                     </div>
-                    <div className="modal-backdrop" onClick={() => setIsCreateModalOpen(false)}></div>
+                    <div className="modal-backdrop"></div>
                 </div>
             )}
         </div>
