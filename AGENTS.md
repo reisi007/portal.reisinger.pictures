@@ -6,16 +6,18 @@
 * Always start your response with a clear "**Planungsphase**".
 * During this phase, review `AGENTS.todo.md`. Remove completed (`[x]`) tasks, add new ones if necessary, and **NEVER** drop or delete unchecked (`[ ]`) tasks. All pending tasks must be preserved.
 
-**1. Language Policy**
+**1. Language Policy & Lightroom Feature Parity**
+* **Lightroom Plugin:** The Lightroom plugin is a first-class citizen for the photographer workflow. We strive for Feature Parity between the React Dashboard and the Lightroom Plugin for gallery management (editing, live mode, meta-galleries, invites). The plugin UI must strictly verify the `photographer` or `admin` role before allowing interaction.
+* Code & Docs: English.
 * Code & Docs: English.
 * UI & Frontend Strings: German.
 * **Frontend Code:** Strictly **TypeScript** (`.ts`, `.tsx`). Absolutely no plain JavaScript.
 
-**2. Code Output & Script Generation (THE RULE OF 3)**
+**2. Code Output & Script Generation (ALWAYS USE MJS)**
 * Always output complete files. No placeholders.
-* **CRITICAL RULE:** For changes spanning 3 or more files, output a single `import_gemini.mjs` Node.js script to apply the changes.
+* **CRITICAL RULE:** ALWAYS output a single `import_gemini.mjs` Node.js script to apply any file changes, regardless of the number of files changed. This is for the user's convenience.
 * **CRITICAL RULE:** Always provide a markdown summary of changed files *before* outputting the script, so the user knows exactly what is being modified.
-* **Refactoring:** For small string replacements across many files, generate a Node.js script with regex replacements (`content.replace(/old/g, 'new')`) to save tokens.
+* **Refactoring:** For small string replacements across many files, use the same `import_gemini.mjs` approach with regex replacements (`content.replace(/old/g, 'new')`) to save tokens.
 
 **3. Database & Migrations Workflow (CRITICAL)**
 * During development, there must be exactly ONE migration file (`V001__initial_portal_schema.php`).
