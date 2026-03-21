@@ -58,6 +58,7 @@ Route::middleware(['auth:api', 'management'])->group(function () {
     Route::delete('/management/galleries/{id}', [GalleryController::class, 'destroyGallery']);
     Route::get('/management/gallery-groups/{id}', [GalleryController::class, 'showGroup']);
     Route::get('/management/galleries/{id}/export', [GalleryController::class, 'exportRatings']);
+    Route::get('/management/galleries/{id}/rating-status', [GalleryController::class, 'ratingStatus']);
     
     Route::get('/management/galleries/{id}/invites', [InviteController::class, 'index']);
     Route::post('/management/galleries/{id}/invites', [InviteController::class, 'generate']);

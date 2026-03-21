@@ -29,6 +29,19 @@ export default function ClientGalleryView() {
     const galleryRef = useRef<HTMLDivElement>(null);
     const [finishing, setFinishing] = useState(false);
 
+    // DAU Protection: Rechtsklick in Selection-Galerien global blockieren
+    useEffect(() => {
+        if (gallery?.type === 'selection') {
+            const handleContextMenu = (e: MouseEvent) => {
+                // Rechtsklick nur in Input-Feldern (für Kommentare) erlauben
+                if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+                e.preventDefault();
+            };
+            document.addEventListener('contextmenu', handleContextMenu);
+            return () => document.removeEventListener('contextmenu', handleContextMenu);
+        }
+    }, [gallery?.type]);
+
     useEffect(() => {
         let lightbox: PhotoSwipeLightbox | null = null;
         if (galleryRef.current && photos.length > 0) {
@@ -170,7 +183,7 @@ export default function ClientGalleryView() {
                                data-desc={photo.description}
                                data-artist={photo.artist}
                                className="pswp-item block relative aspect-square">
-                                <img src={photo.thumb_url} className="object-cover w-full h-full" loading="lazy"/>
+                                <img src={photo.thumb_url} className="object-cover w-full h-full select-none" draggable={false} loading="lazy"/>
                             </a>
 
                             <div className="absolute top-2 right-2 opacity-100">

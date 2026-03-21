@@ -55,14 +55,20 @@ class MailController extends Controller
         $gallery = Gallery::findOrFail($galleryId);
         $user = auth('api')->user();
 
-        // Wir informieren alle Admins.
-        $admins = User::whereHas('roles', function($q) { $q->where('name', 'admin'); })->get();
+        // Wir informieren die Fotografen der Galerie, ansonsten als Fallback die Admins.
+        $notifiedUsers = User::whereHas('roles', function($q) { $q->whereIn('name', ['photographer', 'admin']); })
+            ->whereHas('galleries', function($q) use ($gallery) { $q->where('galleries.id', $gallery->id); })
+            ->get();
+
+        if ($notifiedUsers->isEmpty()) {
+            $notifiedUsers = User::whereHas('roles', function($q) { $q->where('name', 'admin'); })->get();
+        }
         
-        foreach($admins as $admin) {
+        foreach($notifiedUsers as $notifiedUser) {
             Mail::html(
-                "<p>Hallo {$admin->name},</p><p>Der Kunde <b>{$user->name}</b> ({$user->email}) hat die Auswahl in der Galerie <b>{$gallery->name}</b> soeben abgeschlossen.</p>", 
-                function($msg) use ($admin, $gallery) {
-                    $msg->to($admin->email)->subject("Auswahl abgeschlossen: {$gallery->name}");
+                "<p>Hallo {$notifiedUser->name},</p><p>Der Kunde <b>{$user->name}</b> ({$user->email}) hat die Auswahl in der Galerie <b>{$gallery->name}</b> soeben abgeschlossen.</p>", 
+                function($msg) use ($notifiedUser, $gallery) {
+                    $msg->to($notifiedUser->email)->subject("Auswahl abgeschlossen: {$gallery->name}");
                 }
             );
         }

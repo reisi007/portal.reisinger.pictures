@@ -9,6 +9,7 @@
 
 ## 2. Core Workflows (Selection vs. Delivery)
 The system strictly separates the selection phase (client rating) from the delivery phase (high-res downloads). Ratings are synced back to Lightroom via the API.
+* **Selection Galleries (DAU Protection):** Selection galleries MUST NOT allow downloads. To deter basic users from saving preview images, simple right-click and drag protections (e.g., global contextmenu prevention and `draggable={false}`) must be applied in the frontend.
 
 ## 3. Security, Auditing & Data Access (CRITICAL)
 * **DAO / API Resources Layer:** The backend MUST NEVER return raw Eloquent models directly to the frontend. Always use Laravel API Resources or Data Transfer Objects (DTOs) for backend communication. This ensures sensitive fields (e.g., `password_hash`) are strictly hidden and not leaked in API responses (Search, Dashboard, etc.).
@@ -31,8 +32,10 @@ The system strictly separates the selection phase (client rating) from the deliv
 
 ## 6. Component Architecture & UI Rules (React)
 * **Mobile-Friendliness (No Hover-Only):** The visibility of interaction elements (e.g., Edit/Delete buttons on cards or sidebars) MUST NOT be hidden via CSS hover states (`group-hover:opacity-100`). Buttons must be directly visible and usable on touch devices.
+* **Form UI Rules:** All informational descriptions and helper texts MUST be placed strictly BELOW the corresponding input field, not above or beside it.
 * **Keep Components Small & Focused:** Components should rarely exceed 150 lines. Extract Modals and complex forms into distinct `.tsx` components.
 * **Domain Separation:** Do not mix completely different business domains in one view.
+* **No alert() Dialogs:** Error messages and success feedback MUST NEVER be displayed using the browser's native `alert()` function. They must be beautifully integrated into the UI using inline alerts or DaisyUI Toast components.
 * **Graceful Degradation & Error Boundaries:** Wrap distinct UI sections in React Error Boundaries (`ErrorBoundary`) so localized bugs or malformed API responses don't crash the entire app.
 
 ## 7. Local Development & Storage Paths

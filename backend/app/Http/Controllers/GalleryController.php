@@ -132,6 +132,11 @@ class GalleryController extends Controller
             }
         }
 
+        // SECURITY FORCEMENT: Selection Galerien MÜSSEN privat sein.
+        if ($request->type === 'selection') {
+            $isPublic = false;
+        }
+
         $gallery = Gallery::create([
             'name' => $request->name,
             'slug' => $slug,
@@ -164,6 +169,9 @@ class GalleryController extends Controller
 
         if (isset($validated['type']) && $validated['type'] === 'selection') {
             $validated['is_live'] = false;
+            $validated['is_public'] = false;
+        } elseif ($gallery->type === 'selection' && !isset($validated['type'])) {
+            $validated['is_public'] = false;
         }
 
         // Vererbung prüfen, falls sich die Gruppe ändert oder das Update is_public überschreiben will
@@ -189,6 +197,41 @@ class GalleryController extends Controller
         
         $gallery->delete();
         return response()->json(['success' => true]);
+    }
+
+
+    public function ratingStatus($id)
+    {
+        $gallery = Gallery::findOrFail($id);
+        $totalPhotos = $gallery->photos()->count();
+
+        // Finde alle User, die mit dieser Galerie verknüpft sind (inklusive Magic Link Gäste)
+        $users = \App\Models\User::whereHas('galleries', function($q) use ($id) {
+            $q->where('galleries.id', $id);
+        })->get();
+
+        $status = [];
+        foreach ($users as $u) {
+            $ratedCount = DB::table('ratings')
+                ->join('photos', 'ratings.photo_id', '=', 'photos.id')
+                ->where('photos.gallery_id', $id)
+                ->where('ratings.user_id', $u->id)
+                ->where('ratings.rating', '>', 0)
+                ->count();
+
+            $status[] = [
+                'user_id' => $u->id,
+                'name' => $u->name,
+                'email' => $u->email,
+                'rated_count' => $ratedCount,
+                'total_photos' => $totalPhotos
+            ];
+        }
+
+        return response()->json([
+            'users' => $status,
+            'total_photos' => $totalPhotos
+        ]);
     }
 
     public function exportRatings($id)
@@ -217,6 +260,9 @@ class GalleryController extends Controller
             }
 
             $export[] = [
+                'id' => $photo->id,
+                'filename' => $photo->filename,
+                'thumb_url' => '/api/media/' . $photo->gallery->slug . '/_thumbs/' . md5($photo->filename . '1024') . '.webp',
                 'lr_uuid' => $photo->lr_uuid,
                 'avg_rating' => $avg ? ceil($avg) : 0,
                 'all_comments' => implode("\n", $comments)
