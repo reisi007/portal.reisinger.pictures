@@ -1,5 +1,6 @@
 import useSWR from 'swr';
 import {fetcher} from '../api';
+import {Gallery} from './useGalleries';
 
 export interface User {
     id: number;
@@ -10,7 +11,7 @@ export interface User {
     is_pending: boolean;
     can_edit_metadata: boolean;
     roles: string[];
-    my_galleries?: { id: number; name: string; full_path: string }[];
+    my_galleries?: Gallery[];
 }
 
 export function useAuth() {

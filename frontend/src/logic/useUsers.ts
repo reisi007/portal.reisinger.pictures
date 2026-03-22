@@ -1,5 +1,6 @@
 import useSWR from 'swr';
 import {apiMutate, fetcher} from '../api';
+import {Gallery, GalleryGroup} from './useGalleries';
 
 export interface Role {
     id: number;
@@ -12,15 +13,15 @@ export interface UserDetailed {
     email: string;
     can_edit_metadata: boolean;
     roles: Role[];
-    gallery_groups: { id: number; name: string }[];
-    galleries: { id: number; name: string }[];
+    gallery_groups: GalleryGroup[];
+    galleries: Gallery[];
 }
 
 export interface DomainMapping {
     id: number;
     domain: string;
     role?: Role;
-    gallery_group?: { id: number; name: string };
+    gallery_group?: GalleryGroup;
 }
 
 export function useUsers() {
