@@ -29,13 +29,15 @@ export interface GalleryTreeResponse {
     root_galleries: Gallery[];
 }
 
-export const flattenGroups = (groups: GalleryGroup[], depth = 0): {
-    id: number,
-    name: string,
-    depth: number,
-    is_public: boolean | null
-}[] => {
-    let flat: { id: number, name: string, depth: number, is_public: boolean | null }[] = [];
+export interface FlatGroup {
+    id: number;
+    name: string;
+    depth: number;
+    is_public: boolean | null;
+}
+
+export const flattenGroups = (groups: GalleryGroup[], depth = 0): FlatGroup[] => {
+    let flat: FlatGroup[] = [];
     for (const g of groups) {
         flat.push({id: g.id, name: g.name, depth, is_public: g.is_public ?? null});
         if (g.children) flat = flat.concat(flattenGroups(g.children, depth + 1));

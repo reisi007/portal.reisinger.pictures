@@ -333,7 +333,7 @@ export default function Sidebar(props: SidebarProps) {
                 {isClient && props.currentView !== 'search' && (
                     <ul className="menu bg-base-200 w-full rounded-box p-0">
                         <li className="menu-title"><span>Freigeschaltet</span></li>
-                        {user.my_galleries?.map((g: { id: number; name: string; full_path: string }) => (
+                        {user.my_galleries?.map((g: Gallery) => (
                             <li key={g.id}>
                                 <Link to={'/' + g.full_path} onClick={props.onCloseMobile}>
                                     {g.name}

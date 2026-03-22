@@ -2,18 +2,11 @@
 
 ## Offene Punkte
 
-
-### Lightroom Plugin (Feature Parity)
-- [x] **Layout & Rollencheck**: Spacing der UI verbessern und prüfen, ob der eingeloggte User die Fotografen-Rolle hat (via `/api/auth/me`).
-- [x] **Galerien bearbeiten**: Möglichkeit hinzufügen, bestehende Galerien umzubenennen und den Live-Modus zu toggeln.
-- [x] **Meta-Galerien verwalten**: Erstellen und Bearbeiten von Ordnern / Meta-Galerien direkt aus LR heraus ermöglichen.
-- [x] **Erweitertes Invite-Management**: Das "Einladungs-Link kopieren"-Feature ausbauen, um eine Liste von benannten Invites verwalten zu können (wie im React Frontend).
-
 ### Frontend
-- [ ] **UI Refactoring**: Überprüfen und Sicherstellen, dass alle Infotexte/Beschreibungen in Formularen strikt *unterhalb* des jeweiligen Inputs angezeigt werden.
-- [ ] **Feature (Galerie-Management)**: Möglichkeit schaffen, direkt aus der Galerie-Verwaltung heraus registrierte Nutzer der Galerie oder Meta-Galerie hinzuzufügen/zu entfernen (bisher nur global in /users möglich).
-- [ ] **Frontend Refactoring**: Alle verbleibenden `alert()` Aufrufe (z.B. im Reset-Password, Login, Invites) entfernen und durch saubere UI-Toasts ersetzen.
-- [ ] **Refactoring**: Reuse types in properties in the Props of the React hooks to make them more human readable and maintainable.
+- [x] **Refactoring**: Reuse types in properties in the Props of the React hooks to make them more human readable and maintainable.
+
+### Rechtliches & Compliance
+- [ ] **DSGVO / Privacy**: DSGVO in der EU beachten. Eine Datenschutzbestimmung erstellen, im Frontend einbinden und bei zukünftigen Features stets aktuell halten.
 
 ### Backend & Datenbank
 - [ ] **Feature (Low Prio)**: Lokaler Toggle (z.B. .env oder UI) implementieren, um die rechenintensive Bildverarbeitung (Imagick/ExifTool) für schnelles lokales Testen zu deaktivieren.
@@ -22,3 +15,5 @@
 - [ ] **Metadaten-Berechtigungen (Kunden)**: Das Bearbeiten von Metadaten durch Kunden muss pro Galerie explizit erlaubt werden.
 - [ ] **Metadaten-Berechtigungen (Fotografen)**: Fotografen dürfen in Galerien, auf die sie Zugriff haben, Metadaten ändern. Das Feld "Urheber" (Artist) bleibt read-only.
 - [ ] **Feature**: Backend-Endpoint für die "Sammelansicht" einer Meta-Galerie (Alle Fotos der Sub-Galerien) implementieren, da der UI-Button jetzt existiert.
+- [ ] **Auth / Security**: Backend-Route `POST /api/auth/refresh` in `AuthController.php` und `api.php` anlegen, um das Token-Refresh zu ermöglichen.
+- [ ] **Auth / Security**: Konfiguration in `config/jwt.php` anpassen: `ttl` auf 240 (4h), `refresh_ttl` auf 20160 (14 Tage) und `refresh_iat` auf `true` setzen, um das "Rolling Refresh" für aktive User zu aktivieren.

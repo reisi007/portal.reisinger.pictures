@@ -1,8 +1,8 @@
 import { useState } from 'react';
-import {Gallery, GalleryGroup} from '../../logic/useGalleries';
+import {Gallery, GalleryGroup, FlatGroup} from '../../logic/useGalleries';
 
 interface GalleryModalsProps {
-    availableGroups: { id: number, name: string, depth: number, is_public: boolean | null }[];
+    availableGroups: FlatGroup[];
     isGroupModalOpen: boolean;
     setGroupModalOpen: (open: boolean) => void;
     isGalleryModalOpen: boolean;

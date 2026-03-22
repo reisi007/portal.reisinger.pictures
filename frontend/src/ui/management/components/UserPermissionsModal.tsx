@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import {Role, UserDetailed} from '../../../logic/useUsers';
+import {FlatGroup, Gallery} from '../../../logic/useGalleries';
 
 interface UserPermissionsModalProps {
     user: UserDetailed;
     roles?: Role[];
-    flatGroups: { id: number; name: string; depth: number }[];
-    flatGalleries: { id: number; name: string }[];
+    flatGroups: FlatGroup[];
+    flatGalleries: Gallery[];
     onClose: () => void;
     onSave: (id: number, roles: number[], groups: number[], galleries: number[], canEditMeta: boolean) => Promise<void>;
 }

@@ -1,10 +1,11 @@
 import { useState } from 'react';
 import {DomainMapping, Role} from '../../../logic/useUsers';
+import {FlatGroup} from '../../../logic/useGalleries';
 
 interface DomainMappingTabProps {
     mappings?: DomainMapping[];
     roles?: Role[];
-    flatGroups: { id: number; name: string; depth: number }[];
+    flatGroups: FlatGroup[];
     onCreateMapping: (domain: string, role_id: number | null, group_id: number | null) => Promise<void>;
     onDeleteMapping: (id: number) => Promise<void>;
 }

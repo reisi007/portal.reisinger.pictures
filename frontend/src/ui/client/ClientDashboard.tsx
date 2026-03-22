@@ -2,6 +2,7 @@ import { useState } from 'react';
 import {Link, useNavigate} from 'react-router-dom';
 import {useAuth} from '../../logic/useAuth';
 import {useSearch} from '../../logic/useSearch';
+import {Gallery} from '../../logic/useGalleries';
 import Sidebar from '../components/Sidebar';
 
 export default function ClientDashboard() {
@@ -88,7 +89,7 @@ export default function ClientDashboard() {
                     <h1 className="text-3xl font-bold mb-8">Willkommen zurück, {user.name}!</h1>
                     {(user.my_galleries?.length ?? 0) > 0 ? (
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                            {user.my_galleries?.map((g: { id: number; name: string; full_path: string }) => (
+                            {user.my_galleries?.map((g: Gallery) => (
                                 <div key={g.id}
                                      className="card bg-base-100 shadow-xl cursor-pointer hover:shadow-2xl transition-shadow border border-base-300"
                                      onClick={() => navigate('/' + g.full_path)}>

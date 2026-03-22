@@ -36,8 +36,13 @@ The system strictly separates the selection phase (client rating) from the deliv
 * **Keep Components Small & Focused:** Components should rarely exceed 150 lines. Extract Modals and complex forms into distinct `.tsx` components.
 * **Domain Separation:** Do not mix completely different business domains in one view.
 * **No alert() Dialogs:** Error messages and success feedback MUST NEVER be displayed using the browser's native `alert()` function. They must be beautifully integrated into the UI using inline alerts or DaisyUI Toast components.
+* **Type Reusability (DRY):** Always extract and reuse TypeScript interfaces/types from the logic layer (e.g., `useGalleries.ts`) in UI components. Do not redefine types inline in component props or map functions (e.g., avoid `(g: { id: number... }) =>`).
 * **Graceful Degradation & Error Boundaries:** Wrap distinct UI sections in React Error Boundaries (`ErrorBoundary`) so localized bugs or malformed API responses don't crash the entire app.
 
 ## 7. Local Development & Storage Paths
 * No local `.env` dependency for development; overrides are in config files mirroring `docker-compose.local.yml`.
 * Use `clean_dev_storage.mjs` to clear: `photos/`, `ftp/`, `backend/storage/app/private/temp/`, `backend/storage/app/private/watermark_master_*.png`, and `backend/storage/framework/cache/data/`.
+
+## 8. Authentication & Token Management
+* **Silent Token Refresh Pattern:** The frontend uses an Axios-like interceptor pattern in `api.ts` (`fetcher` and `apiMutate`). If an API request returns a `401 Unauthorized`, the request is paused, a silent background call to `/api/auth/refresh` is made to obtain a new JWT, and the original request is retried. A promise-lock (`isRefreshing`) prevents concurrent refresh spamming.
+* **JWT Storage (Security vs. Debugging):** Currently, the JWT is stored in `localStorage` (`rp_jwt`). This allows easy debugging of the token payload in the browser DevTools. While `HttpOnly` cookies provide better protection against XSS (Cross-Site Scripting), `localStorage` is used here intentionally as a developer ergonomics trade-off. XSS risks are mitigated via React's default escaping logic.
