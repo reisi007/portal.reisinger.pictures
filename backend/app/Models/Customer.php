@@ -6,33 +6,35 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Laravel\Scout\Searchable;
 
-class Location extends Model
+class Customer extends Model
 {
     use HasUuids, Searchable;
 
-    public $timestamps = false;
+    public const UPDATED_AT = null;
 
     protected $fillable = [
-        'type',
         'name',
-        'state',
+        'company',
+        'email',
+        'street',
+        'zip',
+        'city',
         'country',
-        'iso_country',
-        'postal_code',
-        'population'
+        'uid'
     ];
 
     public function toSearchableArray()
     {
         return [
             'id' => $this->id,
-            'type' => $this->type,
             'name' => $this->name,
-            'state' => $this->state,
+            'company' => $this->company,
+            'email' => $this->email,
+            'street' => $this->street,
+            'zip' => $this->zip,
+            'city' => $this->city,
             'country' => $this->country,
-            'postal_code' => $this->postal_code,
-            'iso_country' => $this->iso_country,
-            'population' => (int) $this->population,
+            'uid' => $this->uid,
         ];
     }
 }
