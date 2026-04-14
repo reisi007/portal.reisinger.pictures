@@ -37,8 +37,8 @@ return [
 
 
     'stripe' => [
-        'key' => env('STRIPE_KEY', 'pk_test_51TJyXn1YgMBoWMtKQ1JiPtIkXO5e0mkRki6WLJX4Mt6fzEOci0rVQzRqRCGOgIZ00v6mDZCXnAx8Q9axFX34Ih2d004vStDJql'),
-        'secret' => env('STRIPE_SECRET', 'sk_test_51TJyXn1YgMBoWMtKsotyKDGOUxNI8NgiKIc9RlFoOrYMtrBaVBsAyA4Es2ZOVBb6oOyuRMxWv7inmr0H8ymPwFLH00LTusAHBr'),
+        'key' => env('STRIPE_KEY', env('APP_ENV') === 'production' ? null : 'pk_test_51TJyXn1YgMBoWMtKQ1JiPtIkXO5e0mkRki6WLJX4Mt6fzEOci0rVQzRqRCGOgIZ00v6mDZCXnAx8Q9axFX34Ih2d004vStDJql'),
+        'secret' => env('STRIPE_SECRET', env('APP_ENV') === 'production' ? null : 'sk_test_51TJyXn1YgMBoWMtKsotyKDGOUxNI8NgiKIc9RlFoOrYMtrBaVBsAyA4Es2ZOVBb6oOyuRMxWv7inmr0H8ymPwFLH00LTusAHBr'),
         'webhook_secret' => env('STRIPE_WEBHOOK_SECRET'),
     ],
 ];
